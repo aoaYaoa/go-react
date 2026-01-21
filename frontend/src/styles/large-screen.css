@@ -1,0 +1,675 @@
+/* 大屏适配全局样式 - 现代化设计 */
+
+/* 基础字体大小 */
+:root {
+  --font-size-base: 16px;
+  --font-size-large: 18px;
+  --font-size-xlarge: 20px;
+  --spacing-base: 1rem;
+  --spacing-large: 1.5rem;
+  --spacing-xlarge: 2rem;
+  --container-max-width: 1280px;
+  --card-shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  --card-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --card-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --card-shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+/* 大屏模式样式 (1920px+) */
+body.large-screen-mode {
+  --font-size-base: 18px;
+  --font-size-large: 22px;
+  --font-size-xlarge: 26px;
+  --spacing-base: 1.5rem;
+  --spacing-large: 2rem;
+  --spacing-xlarge: 3rem;
+  --container-max-width: 1920px;
+  --card-shadow-sm: 0 2px 4px 0 rgba(0, 0, 0, 0.1), 0 2px 4px 0 rgba(0, 0, 0, 0.06);
+  --card-shadow-md: 0 6px 8px -1px rgba(0, 0, 0, 0.1), 0 3px 6px -1px rgba(0, 0, 0, 0.06);
+  --card-shadow-lg: 0 12px 20px -3px rgba(0, 0, 0, 0.1), 0 6px 10px -2px rgba(0, 0, 0, 0.05);
+  --card-shadow-xl: 0 25px 40px -5px rgba(0, 0, 0, 0.1), 0 12px 20px -5px rgba(0, 0, 0, 0.04);
+}
+
+/* 超大屏模式样式 (2560px+) */
+body.xlarge-screen-mode {
+  --font-size-base: 20px;
+  --font-size-large: 26px;
+  --font-size-xlarge: 32px;
+  --spacing-base: 2rem;
+  --spacing-large: 2.5rem;
+  --spacing-xlarge: 4rem;
+  --container-max-width: 2560px;
+  --card-shadow-sm: 0 3px 6px 0 rgba(0, 0, 0, 0.1), 0 3px 6px 0 rgba(0, 0, 0, 0.06);
+  --card-shadow-md: 0 8px 12px -1px rgba(0, 0, 0, 0.1), 0 4px 8px -1px rgba(0, 0, 0, 0.06);
+  --card-shadow-lg: 0 15px 25px -3px rgba(0, 0, 0, 0.1), 0 8px 14px -2px rgba(0, 0, 0, 0.05);
+  --card-shadow-xl: 0 30px 50px -5px rgba(0, 0, 0, 0.1), 0 15px 25px -5px rgba(0, 0, 0, 0.04);
+}
+
+/* 响应式断点增强 */
+
+/* 1440px - 中等大屏 */
+@media (min-width: 1440px) {
+  body {
+    font-size: 16px;
+  }
+
+  .container {
+    max-width: 1400px;
+  }
+
+  h1 {
+    font-size: 3.5rem;
+  }
+
+  h2 {
+    font-size: 2.5rem;
+  }
+
+  h3 {
+    font-size: 2rem;
+  }
+
+  .max-w-4xl {
+    max-width: 1200px;
+  }
+
+  .px-4 {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+
+  /* 增强卡片阴影 */
+  .bg-white.shadow-md {
+    box-shadow: var(--card-shadow-lg);
+  }
+
+  .bg-white.shadow-sm {
+    box-shadow: var(--card-shadow-md);
+  }
+}
+
+/* 1920px - 大屏 */
+@media (min-width: 1920px) {
+  body {
+    font-size: 17px;
+  }
+
+  .container {
+    max-width: 1700px;
+  }
+
+  h1 {
+    font-size: 4rem;
+  }
+
+  h2 {
+    font-size: 3rem;
+  }
+
+  h3 {
+    font-size: 2.25rem;
+  }
+
+  .max-w-4xl {
+    max-width: 1400px;
+  }
+
+  .max-w-6xl {
+    max-width: 1800px;
+  }
+
+  .px-4 {
+    padding-left: 2rem;
+    padding-right: 2rem;
+  }
+
+  .py-8 {
+    padding-top: 3rem;
+    padding-bottom: 3rem;
+  }
+
+  .py-12 {
+    padding-top: 4rem;
+    padding-bottom: 4rem;
+  }
+
+  .py-16 {
+    padding-top: 5rem;
+    padding-bottom: 5rem;
+  }
+
+  .space-y-4 > * + * {
+    margin-top: 1.5rem;
+  }
+
+  .space-x-6 > * + * {
+    margin-left: 2rem;
+  }
+
+  /* 增强视觉效果 */
+  .bg-white {
+    backdrop-filter: blur(10px);
+  }
+
+  .bg-white.shadow-md {
+    box-shadow: var(--card-shadow-xl);
+    transition: box-shadow 0.3s ease, transform 0.3s ease;
+  }
+
+  .bg-white.shadow-md:hover {
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    transform: translateY(-2px);
+  }
+}
+
+/* 2560px - 超大屏 */
+@media (min-width: 2560px) {
+  body {
+    font-size: 19px;
+  }
+
+  .container {
+    max-width: 2200px;
+  }
+
+  h1 {
+    font-size: 5rem;
+  }
+
+  h2 {
+    font-size: 3.5rem;
+  }
+
+  h3 {
+    font-size: 2.5rem;
+  }
+
+  .max-w-4xl {
+    max-width: 1800px;
+  }
+
+  .max-w-6xl {
+    max-width: 2200px;
+  }
+
+  .px-4 {
+    padding-left: 2.5rem;
+    padding-right: 2.5rem;
+  }
+
+  .py-8 {
+    padding-top: 3.5rem;
+    padding-bottom: 3.5rem;
+  }
+
+  .py-12 {
+    padding-top: 4.5rem;
+    padding-bottom: 4.5rem;
+  }
+
+  .py-16 {
+    padding-top: 5.5rem;
+    padding-bottom: 5.5rem;
+  }
+
+  .space-y-4 > * + * {
+    margin-top: 2rem;
+  }
+
+  .space-x-6 > * + * {
+    margin-left: 2.5rem;
+  }
+
+  /* 更强的视觉效果 */
+  .bg-white.shadow-md {
+    box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.25);
+  }
+
+  .bg-white.shadow-md:hover {
+    box-shadow: 0 35px 70px -12px rgba(0, 0, 0, 0.3);
+    transform: translateY(-4px);
+  }
+}
+
+/* 3840px - 4K屏 */
+@media (min-width: 3840px) {
+  body {
+    font-size: 22px;
+  }
+
+  .container {
+    max-width: 3200px;
+  }
+
+  h1 {
+    font-size: 6rem;
+  }
+
+  h2 {
+    font-size: 4.5rem;
+  }
+
+  h3 {
+    font-size: 3.5rem;
+  }
+
+  .max-w-4xl {
+    max-width: 2600px;
+  }
+
+  .max-w-6xl {
+    max-width: 3200px;
+  }
+
+  .px-4 {
+    padding-left: 3rem;
+    padding-right: 3rem;
+  }
+
+  .py-8 {
+    padding-top: 4rem;
+    padding-bottom: 4rem;
+  }
+
+  .py-12 {
+    padding-top: 5rem;
+    padding-bottom: 5rem;
+  }
+
+  .py-16 {
+    padding-top: 6rem;
+    padding-bottom: 6rem;
+  }
+
+  /* 极强的视觉效果 */
+  .bg-white.shadow-md {
+    box-shadow: 0 40px 80px -12px rgba(0, 0, 0, 0.3);
+  }
+
+  .bg-white.shadow-md:hover {
+    box-shadow: 0 45px 90px -12px rgba(0, 0, 0, 0.35);
+    transform: translateY(-6px);
+  }
+}
+
+/* 大屏模式下的容器 */
+.large-screen-mode .container,
+.xlarge-screen-mode .container {
+  max-width: var(--container-max-width);
+}
+
+/* 大屏模式下的导航栏 */
+.large-screen-mode nav,
+.xlarge-screen-mode nav {
+  padding-top: 1.5rem;
+  padding-bottom: 1.5rem;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(255, 255, 255, 0.95) 100%);
+  backdrop-filter: blur(20px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+.large-screen-mode nav a,
+.xlarge-screen-mode nav a {
+  font-size: var(--font-size-large);
+  font-weight: 500;
+  position: relative;
+  padding: 0.5rem 0;
+}
+
+.large-screen-mode nav a::after,
+.xlarge-screen-mode nav a::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+  transition: width 0.3s ease;
+}
+
+.large-screen-mode nav a:hover::after,
+.xlarge-screen-mode nav a:hover::after {
+  width: 100%;
+}
+
+/* 大屏模式下的卡片 */
+.large-screen-mode .bg-white.p-6,
+.xlarge-screen-mode .bg-white.p-6 {
+  padding: 2.5rem;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 1) 0%, rgba(255, 255, 255, 0.98) 100%);
+}
+
+/* 大屏模式下的按钮 */
+.large-screen-mode button,
+.xlarge-screen-mode button {
+  padding: 0.875rem 2rem;
+  font-size: var(--font-size-base);
+  font-weight: 600;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.large-screen-mode button::before,
+.xlarge-screen-mode button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  transition: left 0.5s;
+}
+
+.large-screen-mode button:hover::before,
+.xlarge-screen-mode button:hover::before {
+  left: 100%;
+}
+
+.large-screen-mode .bg-blue-600,
+.xlarge-screen-mode .bg-blue-600 {
+  padding: 1rem 2.5rem;
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
+}
+
+.large-screen-mode .bg-blue-600:hover,
+.xlarge-screen-mode .bg-blue-600:hover {
+  box-shadow: 0 6px 20px rgba(59, 130, 246, 0.5);
+  transform: translateY(-2px);
+}
+
+/* 大屏模式下的表单输入 */
+.large-screen-mode input,
+.large-screen-mode textarea,
+.large-screen-mode select,
+.xlarge-screen-mode input,
+.xlarge-screen-mode textarea,
+.xlarge-screen-mode select {
+  padding: 1rem;
+  font-size: var(--font-size-base);
+  border-width: 2px;
+  transition: all 0.3s ease;
+}
+
+.large-screen-mode input:focus,
+.large-screen-mode textarea:focus,
+.large-screen-mode select:focus,
+.xlarge-screen-mode input:focus,
+.xlarge-screen-mode textarea:focus,
+.xlarge-screen-mode select:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+}
+
+/* 大屏模式下的标题 */
+.large-screen-mode h1,
+.xlarge-screen-mode h1 {
+  font-size: 4.5rem;
+  background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.large-screen-mode h2,
+.xlarge-screen-mode h2 {
+  font-size: 3.5rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.large-screen-mode h3,
+.xlarge-screen-mode h3 {
+  font-size: 2.5rem;
+  font-weight: 600;
+}
+
+/* 大屏模式下的文本 */
+.large-screen-mode .text-xl,
+.xlarge-screen-mode .text-xl {
+  font-size: var(--font-size-large);
+}
+
+.large-screen-mode .text-2xl,
+.xlarge-screen-mode .text-2xl {
+  font-size: var(--font-size-xlarge);
+}
+
+/* 大屏模式下的间距 */
+.large-screen-mode .space-y-4 > * + *,
+.xlarge-screen-mode .space-y-4 > * + * {
+  margin-top: 2rem;
+}
+
+.large-screen-mode .space-x-6 > * + *,
+.xlarge-screen-mode .space-x-6 > * + * {
+  margin-left: 2.5rem;
+}
+
+/* 大屏模式下的网格 */
+.large-screen-mode .grid-cols-3,
+.xlarge-screen-mode .grid-cols-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 2rem;
+}
+
+.large-screen-mode .grid-cols-4,
+.xlarge-screen-mode .grid-cols-4 {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 2rem;
+}
+
+/* 大屏模式下的阴影 */
+.large-screen-mode .shadow-md,
+.xlarge-screen-mode .shadow-md {
+  box-shadow: var(--card-shadow-xl);
+  transition: box-shadow 0.3s ease, transform 0.3s ease;
+}
+
+.large-screen-mode .shadow-md:hover,
+.xlarge-screen-mode .shadow-md:hover {
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  transform: translateY(-2px);
+}
+
+/* 大屏模式下的圆角 */
+.large-screen-mode .rounded-lg,
+.xlarge-screen-mode .rounded-lg {
+  border-radius: 1.25rem;
+}
+
+/* 大屏模式下的加载动画 */
+.large-screen-mode .animate-spin,
+.xlarge-screen-mode .animate-spin {
+  width: 5rem;
+  height: 5rem;
+  border-width: 4px;
+}
+
+/* 大屏模式下的模态框 */
+.large-screen-mode .fixed.inset-0,
+.xlarge-screen-mode .fixed.inset-0 {
+  padding: 4rem;
+}
+
+/* 大屏模式下的表格 */
+.large-screen-mode table,
+.xlarge-screen-mode table {
+  font-size: var(--font-size-base);
+}
+
+.large-screen-mode th,
+.large-screen-mode td,
+.xlarge-screen-mode th,
+.xlarge-screen-mode td {
+  padding: 1.5rem;
+}
+
+/* 大屏模式下的标签 */
+.large-screen-mode .badge,
+.large-screen-mode .tag,
+.xlarge-screen-mode .badge,
+.xlarge-screen-mode .tag {
+  padding: 0.5rem 1.5rem;
+  font-size: var(--font-size-base);
+}
+
+/* 大屏模式下的进度条 */
+.large-screen-mode progress,
+.xlarge-screen-mode progress {
+  height: 1.5rem;
+}
+
+/* 大屏模式下的滑块 */
+.large-screen-mode input[type="range"],
+.xlarge-screen-mode input[type="range"] {
+  height: 1rem;
+}
+
+/* 大屏模式下的复选框和单选框 */
+.large-screen-mode input[type="checkbox"],
+.large-screen-mode input[type="radio"],
+.xlarge-screen-mode input[type="checkbox"],
+.xlarge-screen-mode input[type="radio"] {
+  width: 1.5rem;
+  height: 1.5rem;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.large-screen-mode input[type="checkbox"]:hover,
+.large-screen-mode input[type="radio"]:hover,
+.xlarge-screen-mode input[type="checkbox"]:hover,
+.xlarge-screen-mode input[type="radio"]:hover {
+  transform: scale(1.1);
+}
+
+/* 大屏模式下的图标 */
+.large-screen-mode svg,
+.xlarge-screen-mode svg {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+/* 平滑滚动 */
+html {
+  scroll-behavior: smooth;
+}
+
+/* 大屏模式下增强的视觉效果 */
+@media (min-width: 1920px) {
+  .hover\:scale-105:hover {
+    transform: scale(1.05);
+  }
+
+  .hover\:scale-110:hover {
+    transform: scale(1.1);
+  }
+
+  .transition-all {
+    transition-duration: 0.3s;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* 渐变背景 */
+  .gradient-bg {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  }
+
+  .gradient-text {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* 玻璃态效果 */
+  .glass {
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+  }
+
+  .glass-dark {
+    background: rgba(30, 41, 59, 0.9);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+  }
+}
+
+/* 大屏模式下的文字间距 */
+@media (min-width: 1920px) {
+  .leading-relaxed {
+    line-height: 1.9;
+  }
+
+  .tracking-wide {
+    letter-spacing: 0.03em;
+  }
+}
+
+/* 大屏模式下的动画 */
+@media (min-width: 1920px) {
+  @keyframes float {
+    0%, 100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-10px);
+    }
+  }
+
+  .animate-float {
+    animation: float 3s ease-in-out infinite;
+  }
+
+  @keyframes pulse-glow {
+    0%, 100% {
+      box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
+    }
+    50% {
+      box-shadow: 0 0 40px rgba(59, 130, 246, 0.6);
+    }
+  }
+
+  .animate-glow {
+    animation: pulse-glow 2s ease-in-out infinite;
+  }
+}
+
+/* 大屏模式下的装饰性元素 */
+@media (min-width: 1920px) {
+  .decorative-circle {
+    position: absolute;
+    border-radius: 50%;
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(139, 92, 246, 0.1));
+    filter: blur(60px);
+  }
+}
+
+/* 大屏模式下的滚动条样式 */
+@media (min-width: 1920px) {
+  ::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 6px;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+    border-radius: 6px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%);
+  }
+}
