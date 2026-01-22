@@ -4,7 +4,7 @@
 
 ## 功能特性
 
-- **依赖注入**: 使用 [Google Wire](https://github.com/google/wire) 进行编译时依赖注入。
+- **依赖注入**: 采用 **手动依赖注入 (Manual DI)**，代码更透明、易调试，无代码生成步骤。
 - **错误处理**: 统一的 `AppError` 错误处理机制，支持业务错误码。
 - **RESTful API**: 基于 [Gin](https://github.com/gin-gonic/gin) 构建。
 - **整洁架构**: 遵循 Go 标准项目布局 (Standard Go Project Layout)。
@@ -88,12 +88,10 @@ Swagger UI 访问地址: http://localhost:8080/swagger/index.html
 
 ## 开发工具
 
-### 依赖注入 (Wire)
+### 依赖注入
 
-如果修改了 `internal/container` 中的依赖关系，需要重新生成代码：
+本项目已移除 Google Wire，改为**手动依赖注入**。
 
-```bash
-wire ./internal/container
-```
+依赖组装逻辑位于 `internal/container/container.go`。如需添加新组件，请修改该文件。
 
 详细指南请参考 [WIRE.md](WIRE.md)。
