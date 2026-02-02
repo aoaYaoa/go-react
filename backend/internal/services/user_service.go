@@ -10,13 +10,15 @@ import (
 	"context"
 	"errors"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 // UserService 用户服务接口
 type UserService interface {
 	Register(ctx context.Context, req *dto.RegisterRequest) (*dto.RegisterResponse, error)
 	Login(ctx context.Context, req *dto.LoginRequest) (*dto.LoginResponse, error)
-	GetByID(ctx context.Context, id uint) (*models.User, error)
+	GetByID(ctx context.Context, id uuid.UUID) (*models.User, error)
 	List(ctx context.Context) ([]*models.User, error)
 }
 
@@ -37,9 +39,11 @@ func (s *userService) Register(ctx context.Context, req *dto.RegisterRequest) (*
 		return nil, errors.New("用户名已存在")
 	}
 
-	// 检查邮箱是否已被使用
-	if _, err := s.repo.FindByEmail(ctx, req.Email); err == nil {
-		return nil, errors.New("邮箱已被使用")
+	// 检查邮箱是否已被使用（仅当提供了邮箱时）
+	if req.Email != "" {
+		if _, err := s.repo.FindByEmail(ctx, req.Email); err == nil {
+			return nil, errors.New("邮箱已被使用")
+		}
 	}
 
 	// 哈希密码
@@ -63,7 +67,7 @@ func (s *userService) Register(ctx context.Context, req *dto.RegisterRequest) (*
 		return nil, errors.New("注册失败")
 	}
 
-	logger.Infof("[UserService] 用户注册成功: id=%d, username=%s", createdUser.ID, createdUser.Username)
+	logger.Infof("[UserService] 用户注册成功: id=%s, username=%s", createdUser.ID.String(), createdUser.Username)
 
 	return &dto.RegisterResponse{
 		ID:       createdUser.ID,
@@ -86,14 +90,14 @@ func (s *userService) Login(ctx context.Context, req *dto.LoginRequest) (*dto.Lo
 		return nil, errors.New("用户名或密码错误")
 	}
 
-	// 生成 Token
-	token, err := jwt.GenerateToken(user.ID, user.Username, user.Role, "", 24*time.Hour)
+	// 生成 Token (使用 UUID string)
+	token, err := jwt.GenerateToken(user.ID.String(), user.Username, user.Role, "", 24*time.Hour)
 	if err != nil {
 		logger.Errorf("[UserService] 生成 Token 失败: %v", err)
 		return nil, errors.New("登录失败")
 	}
 
-	logger.Infof("[UserService] 用户登录成功: id=%d, username=%s", user.ID, user.Username)
+	logger.Infof("[UserService] 用户登录成功: id=%s, username=%s", user.ID.String(), user.Username)
 
 	return &dto.LoginResponse{
 		User: dto.RegisterResponse{
@@ -109,7 +113,7 @@ func (s *userService) Login(ctx context.Context, req *dto.LoginRequest) (*dto.Lo
 }
 
 // GetByID 根据 ID 获取用户
-func (s *userService) GetByID(ctx context.Context, id uint) (*models.User, error) {
+func (s *userService) GetByID(ctx context.Context, id uuid.UUID) (*models.User, error) {
 	return s.repo.FindByID(ctx, id)
 }
 

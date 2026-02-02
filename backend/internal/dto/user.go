@@ -3,12 +3,14 @@ package dto
 import (
 	"backend/internal/models"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 // RegisterRequest 用户注册请求
 type RegisterRequest struct {
 	Username string `json:"username" binding:"required,min=3,max=20"`
-	Email    string `json:"email" binding:"required,email"`
+	Email    string `json:"email" binding:"omitempty,email"`
 	Password string `json:"password" binding:"required,min=6"`
 }
 
@@ -20,15 +22,15 @@ type LoginRequest struct {
 
 // RegisterResponse 注册响应
 type RegisterResponse struct {
-	ID       uint   `json:"id"`
-	Username string `json:"username"`
-	Email    string `json:"email"`
-	Role     string `json:"role"`
+	ID       uuid.UUID `json:"id"`
+	Username string    `json:"username"`
+	Email    string    `json:"email"`
+	Role     string    `json:"role"`
 }
 
 // UserResponse 用户信息响应
 type UserResponse struct {
-	ID        uint      `json:"id"`
+	ID        uuid.UUID `json:"id"`
 	Username  string    `json:"username"`
 	Email     string    `json:"email"`
 	Role      string    `json:"role"`
@@ -50,8 +52,8 @@ func ToUserResponse(user *models.User) *UserResponse {
 		Username:  user.Username,
 		Email:     user.Email,
 		Role:      user.Role,
-		CreatedAt: time.Unix(user.CreatedAt, 0), // models.User uses Unix timestamp (int64)
-		UpdatedAt: time.Unix(user.UpdatedAt, 0),
+		CreatedAt: user.CreatedAt,
+		UpdatedAt: user.UpdatedAt,
 	}
 }
 

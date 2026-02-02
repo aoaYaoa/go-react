@@ -34,10 +34,10 @@ const (
 
 // Claims JWT 声明（Payload）
 type Claims struct {
-	UserID   uint   `json:"user_id"`
+	UserID    string `json:"user_id"` // 使用 string 存储 UUID
 	Username  string `json:"username"`
 	Role      string `json:"role"`
-	IssuedAt int64  `json:"iat"`
+	IssuedAt  int64  `json:"iat"`
 	ExpiresAt int64  `json:"exp"`
 }
 
@@ -53,7 +53,7 @@ type TokenResponse struct {
 // 简化的 JWT 实现（Base64 编码 Header 和 Payload，HMAC 签名）
 // 生产环境建议使用 github.com/golang-jwt/jwt 库
 //
-// @param userID   用户 ID
+// @param userID   用户 ID (UUID string)
 // @param username  用户名
 // @param role     用户角色
 // @param secret   签名密钥（可选，默认使用 defaultSecret）
@@ -61,7 +61,7 @@ type TokenResponse struct {
 //
 // @return Token 字符串
 // @return 错误信息
-func GenerateToken(userID uint, username string, role string, secret string, duration time.Duration) (string, error) {
+func GenerateToken(userID string, username string, role string, secret string, duration time.Duration) (string, error) {
 	// 使用默认密钥
 	if secret == "" {
 		secret = defaultSecret
@@ -77,10 +77,10 @@ func GenerateToken(userID uint, username string, role string, secret string, dur
 
 	// 构建声明
 	claims := Claims{
-		UserID:   userID,
+		UserID:    userID,
 		Username:  username,
 		Role:      role,
-		IssuedAt: now.Unix(),
+		IssuedAt:  now.Unix(),
 		ExpiresAt: now.Add(duration).Unix(),
 	}
 
@@ -111,13 +111,13 @@ func GenerateToken(userID uint, username string, role string, secret string, dur
 	// 构建 Token
 	token := signatureInput + "." + signature
 
-	logger.Debugf("[JWT] 生成 Token: user_id=%d, username=%s", userID, username)
+	logger.Debugf("[JWT] 生成 Token: user_id=%s, username=%s", userID, username)
 
 	return token, nil
 }
 
 // GenerateTokenResponse 生成完整的 Token 响应
-func GenerateTokenResponse(userID uint, username string, role string, secret string, duration time.Duration) (*TokenResponse, error) {
+func GenerateTokenResponse(userID string, username string, role string, secret string, duration time.Duration) (*TokenResponse, error) {
 	token, err := GenerateToken(userID, username, role, secret, duration)
 	if err != nil {
 		return nil, err
@@ -199,7 +199,7 @@ func ValidateToken(token string, secret string) (*Claims, error) {
 	//     return "", errors.New("无效的 Token 签发者")
 	// }
 
-	logger.Debugf("[JWT] Token 验证成功: user_id=%d, username=%s", claims.UserID, claims.Username)
+	logger.Debugf("[JWT] Token 验证成功: user_id=%s, username=%s", claims.UserID, claims.Username)
 
 	return &claims, nil
 }
@@ -244,12 +244,12 @@ func ExtractToken(c *gin.Context) (string, error) {
 //
 // @param c Gin 上下文
 //
-// @return 用户 ID
+// @return 用户 ID (UUID string)
 // @return 错误信息
-func GetUserID(c *gin.Context) (uint, error) {
+func GetUserID(c *gin.Context) (string, error) {
 	// 从 Context 中获取（如果已由中间件设置）
 	if userID, exists := c.Get("user_id"); exists {
-		if uid, ok := userID.(uint); ok {
+		if uid, ok := userID.(string); ok {
 			return uid, nil
 		}
 	}
@@ -257,13 +257,13 @@ func GetUserID(c *gin.Context) (uint, error) {
 	// 从 Token 中提取
 	token, err := ExtractToken(c)
 	if err != nil {
-		return 0, err
+		return "", err
 	}
 
 	// 验证 Token
 	claims, err := ValidateToken(token, "")
 	if err != nil {
-		return 0, err
+		return "", err
 	}
 
 	// 将用户信息存储到 Context 中

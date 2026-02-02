@@ -6,11 +6,12 @@ import (
 	"context"
 	"errors"
 
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
 // DBUserRepository 数据库用户仓储实现
-// 使用GORM ORM框架与数据库交互，支持MySQL、MoonDB等多种数据库
+// 使用GORM ORM框架与数据库交互，支持MySQL等多种数据库
 type DBUserRepository struct {
 	db *gorm.DB
 }
@@ -32,17 +33,17 @@ func (r *DBUserRepository) Create(ctx context.Context, user *models.User) (*mode
 		return nil, errors.New("创建用户失败: " + err.Error())
 	}
 
-	logger.Infof("用户创建成功: ID=%d, Username=%s", user.ID, user.Username)
+	logger.Infof("用户创建成功: ID=%s, Username=%s", user.ID.String(), user.Username)
 	return user, nil
 }
 
 // FindByID 根据ID查找用户
 // 返回完整的用户信息，不包括密码（通过json标签控制）
-func (r *DBUserRepository) FindByID(ctx context.Context, id uint) (*models.User, error) {
+func (r *DBUserRepository) FindByID(ctx context.Context, id uuid.UUID) (*models.User, error) {
 	var user models.User
 
 	// 使用GORM查询，First返回第一条匹配的记录
-	if err := r.db.WithContext(ctx).First(&user, id).Error; err != nil {
+	if err := r.db.WithContext(ctx).First(&user, "id = ?", id).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, errors.New("用户不存在")
 		}
@@ -97,13 +98,13 @@ func (r *DBUserRepository) Update(ctx context.Context, user *models.User) (*mode
 		return nil, errors.New("更新用户失败: " + err.Error())
 	}
 
-	logger.Infof("用户更新成功: ID=%d", user.ID)
+	logger.Infof("用户更新成功: ID=%s", user.ID.String())
 	return user, nil
 }
 
 // Delete 删除用户
-func (r *DBUserRepository) Delete(ctx context.Context, id uint) error {
-	result := r.db.WithContext(ctx).Delete(&models.User{}, id)
+func (r *DBUserRepository) Delete(ctx context.Context, id uuid.UUID) error {
+	result := r.db.WithContext(ctx).Delete(&models.User{}, "id = ?", id)
 	if result.Error != nil {
 		logger.Errorf("删除用户失败: %v", result.Error)
 		return errors.New("删除用户失败: " + result.Error.Error())
@@ -112,7 +113,7 @@ func (r *DBUserRepository) Delete(ctx context.Context, id uint) error {
 		return errors.New("用户不存在")
 	}
 
-	logger.Infof("用户删除成功: ID=%d", id)
+	logger.Infof("用户删除成功: ID=%s", id.String())
 	return nil
 }
 

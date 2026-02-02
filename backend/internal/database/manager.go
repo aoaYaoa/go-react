@@ -26,8 +26,6 @@ func NewManager(cfg *config.Config) (*Manager, error) {
 		Database: cfg.DatabaseName,
 		Username: cfg.DatabaseUser,
 		Password: cfg.DatabasePass,
-		AppID:    cfg.MoonDBAppID,
-		AppSecret: cfg.MoonDBAppSecret,
 	}
 
 	// 根据类型创建数据库连接
@@ -95,9 +93,4 @@ func (m *Manager) GetDatabaseType() DatabaseType {
 // IsMySQL 判断是否为MySQL数据库
 func (m *Manager) IsMySQL() bool {
 	return m.GetDatabaseType() == MySQL
-}
-
-// IsMoonDB 判断是否为MoonDB数据库
-func (m *Manager) IsMoonDB() bool {
-	return m.GetDatabaseType() == MoonDB
 }

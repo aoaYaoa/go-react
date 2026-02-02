@@ -2,13 +2,32 @@
 @tailwind components;
 @tailwind utilities;
 
-body {
+/* 全局样式 - 移除所有边距和填充 */
+* {
   margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+}
+
+body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* 平滑过渡 */
+* {
+  transition: font-size 0.3s ease, padding 0.3s ease, margin 0.3s ease;
 }
 
 /* 大屏模式类 */
@@ -20,8 +39,5 @@ body.xlarge-screen-mode {
   font-size: 20px;
 }
 
-/* 平滑过渡 */
-* {
-  transition: font-size 0.3s ease, padding 0.3s ease, margin 0.3s ease;
-}
+
 

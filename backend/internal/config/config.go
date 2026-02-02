@@ -17,16 +17,12 @@ type Config struct {
 	CORSOrigins []string
 
 	// 数据库配置
-	DatabaseType string // mysql 或 moondb
+	DatabaseType string
 	DatabaseHost string
 	DatabasePort int
 	DatabaseName string
 	DatabaseUser string
 	DatabasePass string
-
-	// MoonDB 特定配置
-	MoonDBAppID     string
-	MoonDBAppSecret string
 
 	// JWT配置
 	JWTSecret string
@@ -58,16 +54,12 @@ func LoadConfig() *Config {
 		CORSOrigins: []string{getEnv("CORS_ORIGIN", "http://localhost:5173")},
 
 		// 数据库配置
-		DatabaseType: getEnv("DATABASE_TYPE", "moondb"), // 默认使用moondb
+		DatabaseType: getEnv("DATABASE_TYPE", "mysql"),
 		DatabaseHost: getEnv("DATABASE_HOST", "localhost"),
-		DatabasePort: getEnvAsInt("DATABASE_PORT", 27017),
+		DatabasePort: getEnvAsInt("DATABASE_PORT", 3306),
 		DatabaseName: getEnv("DATABASE_NAME", "appdb"),
-		DatabaseUser: getEnv("DATABASE_USER", ""),
+		DatabaseUser: getEnv("DATABASE_USER", "root"),
 		DatabasePass: getEnv("DATABASE_PASS", ""),
-
-		// MoonDB配置
-		MoonDBAppID:     getEnv("MOONDB_APP_ID", ""),
-		MoonDBAppSecret: getEnv("MOONDB_APP_SECRET", ""),
 
 		// JWT配置
 		JWTSecret: getEnv("JWT_SECRET", "your-secret-key-change-in-production"),

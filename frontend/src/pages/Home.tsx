@@ -4,10 +4,6 @@ import { useScreenSize } from '../contexts/ScreenSizeContext'
 function Home() {
   const { isLargeScreen, isExtraLargeScreen } = useScreenSize()
 
-  const containerClass = isLargeScreen || isExtraLargeScreen
-    ? 'max-w-7xl'
-    : 'max-w-4xl'
-
   const gridCols = isExtraLargeScreen
     ? 'grid-cols-4'
     : isLargeScreen
@@ -19,7 +15,7 @@ function Home() {
     : 'px-8 py-3'
 
   return (
-    <div className={`${containerClass} mx-auto transition-all duration-300 relative`}>
+    <div className="transition-all duration-300 relative">
       {/* 装饰性背景元素 */}
       {(isLargeScreen || isExtraLargeScreen) && (
         <>

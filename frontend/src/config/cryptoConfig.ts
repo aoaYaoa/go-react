@@ -227,17 +227,17 @@ export function getHMACKey() {
  * shouldEncryptRequest('/api/login')      // true
  * shouldEncryptRequest('/api/login/step2') // false（精确匹配）
  */
-export function shouldEncryptRequest(url) {
+export function shouldEncryptRequest(url: string): boolean {
   // 如果未启用请求加密，直接返回 false
   if (!cryptoConfig.request.enabled) {
     return false
   }
 
   // 遍历加密接口列表，检查 URL 是否匹配
-  return cryptoConfig.request.encryptedEndpoints.some((pattern) => {
+  return cryptoConfig.request.encryptedEndpoints.some((pattern: string) => {
     // 将通配符 * 转换为正则表达式 .*
     // 例如: '/api/tasks/*' -> '^/api/tasks/.*$'
-    const regex = new RegExp('^' + pattern.replace('*', '.*') + '$')
+    const regex = new RegExp('^' + pattern.replace(/\*/g, '.*') + '$')
 
     // 测试 URL 是否匹配该模式
     return regex.test(url)
@@ -264,16 +264,16 @@ export function shouldEncryptRequest(url) {
  * shouldDecryptResponse('/api/user/info')   // true
  * shouldDecryptResponse('/api/user/orders') // false（精确匹配）
  */
-export function shouldDecryptResponse(url) {
+export function shouldDecryptResponse(url: string): boolean {
   // 如果未启用响应解密，直接返回 false
   if (!cryptoConfig.response.enabled) {
     return false
   }
 
   // 遍历解密接口列表，检查 URL 是否匹配
-  return cryptoConfig.response.decryptedEndpoints.some((pattern) => {
+  return cryptoConfig.response.decryptedEndpoints.some((pattern: string) => {
     // 将通配符 * 转换为正则表达式 .*
-    const regex = new RegExp('^' + pattern.replace('*', '.*') + '$')
+    const regex = new RegExp('^' + pattern.replace(/\*/g, '.*') + '$')
 
     // 测试 URL 是否匹配该模式
     return regex.test(url)

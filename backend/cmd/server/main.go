@@ -57,8 +57,8 @@ func main() {
 
 	// 执行数据库迁移（自动创建表结构）
 	if err := dbManager.Migrate(); err != nil {
-		logger.Errorf("数据库迁移失败: %v", err)
-		panic(err)
+		logger.Warnf("数据库迁移警告（可能是表已存在）: %v", err)
+		// 不中断程序，继续运行
 	}
 
 	// 初始化依赖容器

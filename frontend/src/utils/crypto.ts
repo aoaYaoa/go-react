@@ -23,7 +23,7 @@ import CryptoJS from 'crypto-js'
  * const encrypted = AESEncrypt('hello', '1234567890123456', 'abcdefghijklmnop')
  * // 返回: "U2FsdGVkX1..."
  */
-export function AESEncrypt(plaintext, key, iv) {
+export function AESEncrypt(plaintext: string, key: string, iv: string): string {
   try {
     // 将密钥和 IV 从字符串转换为 WordArray 对象（CryptoJS 内部格式）
     const keyHex = CryptoJS.enc.Utf8.parse(key)
@@ -58,7 +58,7 @@ export function AESEncrypt(plaintext, key, iv) {
  * const decrypted = AESDecrypt(encrypted, '1234567890123456', 'abcdefghijklmnop')
  * // 返回: "hello"
  */
-export function AESDecrypt(ciphertext, key, iv) {
+export function AESDecrypt(ciphertext: string, key: string, iv: string): string {
   try {
     // 将密钥和 IV 从字符串转换为 WordArray 对象
     const keyHex = CryptoJS.enc.Utf8.parse(key)
@@ -97,7 +97,7 @@ export function AESDecrypt(ciphertext, key, iv) {
  * - API 请求签名：将请求参数拼接后签名，放在请求头中
  * - 数据完整性验证：接收方用相同密钥和数据重新计算签名，比对结果
  */
-export function HMACSHA256(key, data) {
+export function HMACSHA256(key: string, data: string): string {
   try {
     // 使用 HMAC-SHA256 算法生成签名
     // 返回 16 进制格式的签名字符串（64 个字符）
@@ -122,7 +122,7 @@ export function HMACSHA256(key, data) {
  * const signature = HMACSHA512('secret-key', 'message to sign')
  * // 返回: "a1b2c3d4..."
  */
-export function HMACSHA512(key, data) {
+export function HMACSHA512(key: string, data: string): string {
   try {
     // 使用 HMAC-SHA512 算法生成签名
     // 返回 16 进制格式的签名字符串（128 个字符）

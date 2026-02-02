@@ -8,6 +8,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 )
 
 // UserHandler 用户处理器接口
@@ -100,17 +101,24 @@ func (h *userHandler) Login(c *gin.Context) {
 // @Success 200 {object} response.Response{data=dto.UserResponse}
 // @Router /api/user/profile [get]
 func (h *userHandler) GetProfile(c *gin.Context) {
-	// 从 Context 中获取用户 ID
+	// 从 Context 中获取用户 ID (UUID string)
 	userID, exists := c.Get("user_id")
 	if !exists {
 		response.Error(c, "未认证", http.StatusUnauthorized)
 		return
 	}
 
-	// 类型断言
-	uid, ok := userID.(uint)
+	// 类型断言为 string
+	uidStr, ok := userID.(string)
 	if !ok {
 		response.Error(c, "用户信息错误", http.StatusInternalServerError)
+		return
+	}
+
+	// 解析 UUID
+	uid, err := uuid.Parse(uidStr)
+	if err != nil {
+		response.Error(c, "用户ID格式错误", http.StatusBadRequest)
 		return
 	}
 

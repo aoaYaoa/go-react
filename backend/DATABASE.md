@@ -5,8 +5,7 @@
 ## 支持的数据库
 
 - **MySQL**: 生产环境标准。
-- **SQLite**: 开发环境默认 (零配置)。
-- **MoonDB**: 自定义数据库解决方案。
+- **PostgreSQL**: 生产环境标准，支持 Supabase。
 - **MongoDB**: 文档存储支持。
 
 ## 配置
@@ -14,8 +13,16 @@
 在 `.env` 中设置 `DATABASE_TYPE`：
 
 ```ini
-# 选项: mysql, sqlite, moondb, mgdb
-DATABASE_TYPE=sqlite
+# 选项: mysql, postgres, mgdb
+DATABASE_TYPE=mysql
+
+# Supabase PostgreSQL 示例
+# DATABASE_TYPE=postgres
+# DATABASE_HOST=db.xxxxx.supabase.co
+# DATABASE_PORT=5432
+# DATABASE_NAME=postgres
+# DATABASE_USER=postgres
+# DATABASE_PASS=your_supabase_password
 ```
 
 ## 数据库结构 (Schema)
@@ -50,6 +57,5 @@ DATABASE_TYPE=sqlite
 
 ## 开发数据库
 
-对于本地开发，推荐使用 **SQLite**。
-数据库文件存储在 `backend/moondb_appdb.db` (或类似路径，取决于配置名称)。
+对于本地开发，推荐使用 **MySQL** 或 **PostgreSQL**。
 **注意**: `*.db` 文件已在 `.gitignore` 中忽略。

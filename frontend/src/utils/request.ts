@@ -19,6 +19,7 @@
  */
 import { AESEncrypt, AESDecrypt } from './crypto'
 import { shouldEncryptRequest, shouldDecryptResponse, getAESKey, getAESIV, cryptoConfig } from '../config/cryptoConfig'
+import { EncryptedData, RequestOptions, ApiResponse } from '../types'
 
 /**
  * 加密请求数据（内部函数）
@@ -33,7 +34,7 @@ import { shouldEncryptRequest, shouldDecryptResponse, getAESKey, getAESIV, crypt
  * encryptRequestData({ username: 'admin', password: '123456' })
  * // 返回: { encrypted: true, data: "U2FsdGVkX1..." }
  */
-function encryptRequestData(data) {
+function encryptRequestData(data: any): EncryptedData | any {
   try {
     // 将对象转换为 JSON 字符串
     const jsonString = JSON.stringify(data)
@@ -64,7 +65,7 @@ function encryptRequestData(data) {
  * decryptResponseData({ encrypted: true, data: "U2FsdGVkX1..." })
  * // 返回: { username: 'admin', password: '123456' }
  */
-function decryptResponseData(data) {
+function decryptResponseData(data: any): any {
   try {
     // 检查数据是否加密格式
     if (data?.encrypted && data?.data) {
@@ -104,7 +105,7 @@ function decryptResponseData(data) {
  * - 建议添加时间戳防止重放攻击
  * - 参数应按字母顺序排序以保证签名一致性
  */
-export function createRequestSignature(method, url, body = null) {
+export function createRequestSignature(method: string, url: string, body: any = null): string {
   // 获取当前时间戳（毫秒）
   // 时间戳用于防止重放攻击
   const timestamp = Date.now().toString()
@@ -153,15 +154,15 @@ export function createRequestSignature(method, url, body = null) {
  *   }
  * })
  */
-export async function fetchWithInterceptor(url, options = {}) {
+export async function fetchWithInterceptor(url: string, options: RequestOptions = {}): Promise<Response> {
   // 合并默认请求选项
-  let requestOptions = {
+  let requestOptions: RequestOptions = {
     ...options,
     headers: {
       // 默认设置 Content-Type 为 JSON
       'Content-Type': 'application/json',
       // 保留用户自定义的请求头
-      ...options.headers,
+      ...(options.headers || {}),
     },
   }
 
@@ -193,15 +194,19 @@ export async function fetchWithInterceptor(url, options = {}) {
   // 检查是否需要添加签名
   if (cryptoConfig.request.signEnabled) {
     // 获取请求体数据（用于签名）
-    const body = options.body ? (typeof options.body === 'string' ? JSON.parse(options.body) : options.body) : null
+    const body = options.body ? (typeof options.body === 'string' ? JSON.parse(options.body as string) : options.body) : null
 
     // 生成签名
     const signature = createRequestSignature(options.method || 'GET', url, body)
 
     // 将签名添加到请求头
-    requestOptions.headers['X-Signature'] = signature
-    // 添加时间戳请求头（后端需要）
-    requestOptions.headers['X-Timestamp'] = Date.now().toString()
+    if (requestOptions.headers) {
+      const headers = requestOptions.headers as Record<string, string>
+      headers['X-Signature'] = signature
+      // 添加时间戳请求头（后端需要）
+      const timestamp: string = Date.now().toString()
+      headers['X-Timestamp'] = timestamp
+    }
   }
 
   // ========== 请求性能监控 ==========
@@ -225,11 +230,22 @@ export async function fetchWithInterceptor(url, options = {}) {
     // ========== 错误响应处理 ==========
     // 检查响应状态码（200-299 为成功）
     if (!response.ok) {
+      // 尝试读取错误响应体
+      let errorData: any = null
+      try {
+        const clonedResponse = response.clone()
+        errorData = await clonedResponse.json()
+      } catch (e) {
+        // 无法解析 JSON，使用默认错误
+      }
+
       // 创建自定义错误对象
-      const error = new Error(`HTTP error! status: ${response.status}`)
+      const errorMessage = errorData?.error || errorData?.message || `HTTP error! status: ${response.status}`
+      const error: any = new Error(errorMessage)
       error.status = response.status
       error.requestId = requestId
       error.url = url
+      error.response = { data: errorData }
       throw error
     }
 
@@ -251,8 +267,7 @@ export async function fetchWithInterceptor(url, options = {}) {
         return {
           ...response,
           json: async () => decryptedData,
-          cloned: true,
-        }
+        } as Response
       } catch (error) {
         // 解密失败，返回原始响应
         console.error('[Decrypt] Failed to decrypt response:', error)
@@ -262,9 +277,9 @@ export async function fetchWithInterceptor(url, options = {}) {
     // 返回原始响应
     return response
 
-  } catch (error) {
+  } catch (error: any) {
     // 记录请求错误日志
-    console.error(`[Request Error] ${url}:`, error.message)
+    console.error(`[Request Error] ${url}:`, error?.message || error)
     // 重新抛出错误，让调用者处理
     throw error
   }
@@ -286,7 +301,7 @@ export async function fetchWithInterceptor(url, options = {}) {
  *   showToast(message)  // 显示错误提示
  * }
  */
-export function getErrorMessage(error) {
+export function getErrorMessage(error: any): string {
   // 情况 1: 服务器返回了错误响应（4xx, 5xx）
   if (error.response) {
     const data = error.response.data
@@ -342,7 +357,7 @@ export function getErrorMessage(error) {
  *   console.error(data.error)
  * }
  */
-export function isSuccessResponse(response) {
+export function isSuccessResponse(response: ApiResponse): boolean {
   // 检查响应对象的 success 字段
   // 假设后端返回格式为: { success: true, data: {...} }
   return response?.success === true
@@ -359,7 +374,7 @@ export function isSuccessResponse(response) {
  * const data = await response.json()
  * const tasks = extractData(data)
  */
-export function extractData(response) {
+export function extractData(response: ApiResponse): any {
   // 提取 data 字段
   // 假设后端返回格式为: { success: true, data: [...] }
   return response?.data
@@ -380,7 +395,7 @@ export function extractData(response) {
  *   console.error(errorMsg)
  * }
  */
-export function extractError(response) {
+export function extractError(response: ApiResponse): string {
   // 提取 error 或 message 字段
   // 假设后端返回格式为: { success: false, error: '错误信息' }
   return response?.error || response?.message || '未知错误'
@@ -398,7 +413,7 @@ export function extractError(response) {
  * const encrypted = encryptData({ username: 'admin', password: '123' })
  * // 可以直接发送到后端，或存储到本地
  */
-export function encryptData(data) {
+export function encryptData(data: any): EncryptedData | any {
   return encryptRequestData(data)
 }
 
@@ -415,6 +430,6 @@ export function encryptData(data) {
  * const decrypted = decryptData(encrypted)
  * // 解密后得到原始数据
  */
-export function decryptData(data) {
+export function decryptData(data: any): any {
   return decryptResponseData(data)
 }

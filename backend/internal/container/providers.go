@@ -7,7 +7,7 @@ import (
 
 // ProvideTaskRepository 根据数据库类型提供 TaskRepository
 func ProvideTaskRepository(manager *database.Manager) repositories.TaskRepository {
-	if manager.IsMoonDB() || manager.IsMySQL() {
+	if manager.IsMySQL() {
 		return repositories.NewDBTaskRepository(manager.GetDB())
 	}
 	return repositories.NewTaskRepository()
@@ -15,8 +15,6 @@ func ProvideTaskRepository(manager *database.Manager) repositories.TaskRepositor
 
 // ProvideUserRepository 根据数据库类型提供 UserRepository
 func ProvideUserRepository(manager *database.Manager) repositories.UserRepository {
-	if manager.IsMoonDB() || manager.IsMySQL() {
-		return repositories.NewDBUserRepository(manager.GetDB())
-	}
-	return repositories.NewUserRepository()
+	// 使用数据库仓储（支持 PostgreSQL, MySQL 等）
+	return repositories.NewDBUserRepository(manager.GetDB())
 }

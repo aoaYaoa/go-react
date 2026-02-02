@@ -10,8 +10,7 @@
 - **整洁架构**: 遵循 Go 标准项目布局 (Standard Go Project Layout)。
 - **数据库支持**:
   - MySQL
-  - SQLite (开发环境默认)
-  - MoonDB
+  - PostgreSQL (Supabase)
   - MongoDB
 - **ORM**: 使用 [GORM](https://gorm.io/) 处理 SQL 数据库，使用 UUID 作为主键。
 - **身份验证**: 基于 JWT 的身份验证。

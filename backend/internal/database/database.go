@@ -14,10 +14,10 @@ type DatabaseType string
 const (
 	// MySQL 数据库类型
 	MySQL DatabaseType = "mysql"
-	// MoonDB 数据库类型
-	MoonDB DatabaseType = "moondb"
 	// Mgdb 数据库类型 (MongoDB)
 	Mgdb DatabaseType = "mgdb"
+	// PostgreSQL 数据库类型 (Supabase)
+	PostgreSQL DatabaseType = "postgres"
 )
 
 // Database 数据库接口
@@ -42,21 +42,18 @@ type DatabaseConfig struct {
 	Database string       // 数据库名
 	Username string       // 用户名
 	Password string       // 密码
-	// MoonDB 特定配置
-	AppID     string // MoonDB 应用ID
-	AppSecret string // MoonDB 应用密钥
 }
 
 // NewDatabase 根据配置创建数据库连接
-// 支持MySQL、MoonDB和MongoDB三种数据库类型
+// 支持MySQL、MongoDB和PostgreSQL三种数据库类型
 func NewDatabase(config *DatabaseConfig) (Database, error) {
 	switch config.Type {
 	case MySQL:
 		return NewMySQLDatabase(config)
-	case MoonDB:
-		return NewMoonDBDatabase(config)
 	case Mgdb:
 		return NewMgdbDatabase(config)
+	case PostgreSQL:
+		return NewPostgreSQLDatabase(config)
 	default:
 		return nil, fmt.Errorf("不支持的数据库类型: %s", config.Type)
 	}
