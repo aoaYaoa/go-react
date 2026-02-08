@@ -1,7 +1,11 @@
-import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { UserOutlined, LockOutlined } from '@ant-design/icons'
+import { Form, Input, Button, Card, Divider, message } from 'antd'
+import { UserOutlined, LockOutlined, SafetyOutlined } from '@ant-design/icons'
+import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { userService } from '../services/user'
+import { useStore } from '../store'
+import styles from './Login.module.css'
 
 /**
  * 登录表单值
@@ -9,6 +13,7 @@ import { userService } from '../services/user'
 interface LoginFormValues {
   username: string
   password: string
+  captcha_code: string
 }
 
 /**
@@ -18,9 +23,31 @@ interface LoginFormValues {
  * @returns {React.ReactNode} 登录页面
  */
 function Login() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const [form] = Form.useForm<LoginFormValues>()
   const [loading, setLoading] = useState<boolean>(false)
+  const [captchaId, setCaptchaId] = useState<string>('')
+  const [captchaImage, setCaptchaImage] = useState<string>('')
+  const { setUser, setToken, setRoles, setMenus } = useStore()
+
+  /**
+   * 加载验证码
+   */
+  const loadCaptcha = async () => {
+    try {
+      const captcha = await userService.getCaptcha()
+      setCaptchaId(captcha.captcha_id)
+      setCaptchaImage(captcha.captcha_image)
+    } catch (error) {
+      message.error('获取验证码失败')
+    }
+  }
+
+  // 组件挂载时加载验证码
+  useEffect(() => {
+    loadCaptcha()
+  }, [])
 
   /**
    * 处理登录提交
@@ -32,48 +59,45 @@ function Login() {
       const result = await userService.login({
         username: values.username,
         password: values.password,
+        captcha_id: captchaId,
+        captcha_code: values.captcha_code,
       })
       
-      message.success('登录成功！')
-      console.log('登录成功:', result.user)
+      // 保存用户信息、token、角色和菜单到 store
+      setUser(result.user)
+      setToken(result.token)
+      setRoles(result.roles || [])
+      setMenus(result.menus || [])
+      
+      message.success(t('auth.loginSuccess', '登录成功！'))
       
       // 跳转到首页
       setTimeout(() => {
         navigate('/')
+        window.location.reload()
       }, 500)
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : '登录失败，请稍后重试'
+      const errorMessage = err instanceof Error ? err.message : t('auth.loginFailed', '登录失败，请稍后重试')
       message.error(errorMessage)
-      console.error('登录错误:', err)
+      // 验证码错误后重新加载验证码
+      loadCaptcha()
+      form.setFieldValue('captcha_code', '')
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <div 
-      className="min-h-screen w-screen flex items-center justify-center"
-      style={{
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-        margin: 0,
-        padding: '2rem 0'
-      }}
-    >
-      <div className="w-full max-w-md mx-4">
-        <Card 
-          style={{
-            borderRadius: '16px',
-            boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)'
-          }}
-        >
-          <div className="text-center mb-4">
-            <div className="w-14 h-14 mx-auto mb-2 rounded-full flex items-center justify-center" style={{
-              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
-            }}>
-              <UserOutlined className="text-2xl text-white" />
+    <div className={styles.loginContainer}>
+      <ParticlesBackground particleCount={1500} variant="login" />
+      <div className={styles.loginCard}>
+        <Card variant="borderless" className={styles.cardContent}>
+          <div className={styles.header}>
+            <div className={styles.iconWrapper}>
+              <UserOutlined style={{ fontSize: '20px', color: '#fff' }} />
             </div>
-            <h1 className="text-xl font-bold mb-1">欢迎回来</h1>
-            <p className="text-gray-500 text-xs">登录您的账户继续使用</p>
+            <h1 className={styles.title}>{t('auth.welcomeBack')}</h1>
+            <p className={styles.subtitle}>{t('auth.loginTip')}</p>
           </div>
 
           <Form
@@ -84,35 +108,64 @@ function Login() {
             style={{ marginBottom: 0 }}
           >
             <Form.Item
-              label="用户名"
+              label={t('auth.username')}
               name="username"
               style={{ marginBottom: '12px' }}
               rules={[
-                { required: true, message: '请输入用户名' },
-                { min: 3, message: '用户名长度至少为 3 个字符' }
+                { required: true, message: t('auth.usernameRequired') },
+                { min: 3, message: t('auth.usernameLength') }
               ]}
             >
               <Input
                 prefix={<UserOutlined />}
-                placeholder="请输入用户名"
+                placeholder={t('auth.username')}
                 size="middle"
               />
             </Form.Item>
 
             <Form.Item
-              label="密码"
+              label={t('auth.password')}
               name="password"
-              style={{ marginBottom: '16px' }}
+              style={{ marginBottom: '12px' }}
               rules={[
-                { required: true, message: '请输入密码' },
-                { min: 6, message: '密码长度至少为 6 个字符' }
+                { required: true, message: t('auth.passwordRequired') },
+                { min: 6, message: t('auth.passwordLength') }
               ]}
             >
               <Input.Password
                 prefix={<LockOutlined />}
-                placeholder="请输入密码"
+                placeholder={t('auth.password')}
                 size="middle"
               />
+            </Form.Item>
+
+            <Form.Item
+              label="验证码"
+              name="captcha_code"
+              style={{ marginBottom: '16px' }}
+              rules={[
+                { required: true, message: '请输入验证码' },
+                { len: 4, message: '验证码为4位' }
+              ]}
+            >
+              <div className={styles.captchaWrapper}>
+                <Input
+                  prefix={<SafetyOutlined />}
+                  placeholder="请输入验证码"
+                  size="middle"
+                  maxLength={4}
+                  className={styles.captchaInput}
+                />
+                {captchaImage && (
+                  <img
+                    src={captchaImage}
+                    alt="验证码"
+                    onClick={loadCaptcha}
+                    className={styles.captchaImage}
+                    title="点击刷新验证码"
+                  />
+                )}
+              </div>
             </Form.Item>
 
             <Form.Item style={{ marginBottom: '12px' }}>
@@ -122,36 +175,30 @@ function Login() {
                 block
                 loading={loading}
                 size="middle"
-                style={{
-                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                  border: 'none',
-                  height: '38px',
-                  fontSize: '14px',
-                  fontWeight: '600'
-                }}
+                className={styles.loginButton}
               >
-                登录
+                {t('auth.login')}
               </Button>
             </Form.Item>
           </Form>
 
-          <Divider plain style={{ margin: '12px 0', fontSize: '12px' }}>或</Divider>
+          <Divider plain className={styles.divider}>{t('common.or', '或')}</Divider>
 
-          <div className="text-center mb-2">
-            <span className="text-gray-600 text-xs">还没有账户？</span>
+          <div className={styles.footer}>
+            <span className={styles.footerText}>{t('auth.noAccount')}</span>
             <Button
               type="link"
               onClick={() => navigate('/register')}
               size="small"
-              style={{ color: '#667eea', fontWeight: '600', padding: '0 4px', fontSize: '12px' }}
+              className={styles.registerLink}
             >
-              立即注册
+              {t('auth.registerNow')}
             </Button>
           </div>
 
-          <div className="p-2 bg-blue-50 rounded-lg text-center">
-            <p className="text-xs text-gray-600 m-0 leading-tight">
-              <span className="font-semibold">提示：</span>使用用户名和密码登录
+          <div className={styles.infoBox}>
+            <p className={styles.infoText}>
+              <span className={styles.infoLabel}>{t('common.info', '提示')}：</span>{t('auth.loginTip')}
             </p>
           </div>
         </Card>

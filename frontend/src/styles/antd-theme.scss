@@ -1,0 +1,935 @@
+// Ant Design 自定义主题样式
+// 与项目毛玻璃风格 UI 保持一致
+
+// 主题色彩变量
+$primary-color: #0ea5e9; // sky-500
+$primary-hover: #0284c7; // sky-600
+$primary-active: #0369a1; // sky-700
+$success-color: #10b981; // emerald-500
+$warning-color: #f59e0b; // amber-500
+$error-color: #ef4444; // red-500
+$info-color: #3b82f6; // blue-500
+
+$text-color: #1f2937; // gray-800
+$text-secondary: #6b7280; // gray-500
+$border-color: rgba(255, 255, 255, 0.6);
+$border-radius: 12px;
+$box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+
+// 毛玻璃效果
+@mixin glass-effect {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(20px) saturate(150%);
+  -webkit-backdrop-filter: blur(20px) saturate(150%);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+}
+
+// 悬停效果
+@mixin hover-effect {
+  transition: all 0.3s ease;
+  &:hover {
+    background: rgba(255, 255, 255, 0.85);
+    transform: translateY(-2px);
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
+  }
+}
+
+// ==================== 页面容器样式 ====================
+
+// 管理页面容器
+.admin-page-container {
+  min-height: calc(100vh - 80px);
+  padding: 24px;
+  background: transparent;
+}
+
+.admin-page-header {
+  margin-bottom: 24px;
+  padding: 24px;
+  @include glass-effect;
+  border-radius: 16px;
+  box-shadow: $box-shadow;
+
+  h1 {
+    font-size: 24px;
+    font-weight: 700;
+    color: $text-color;
+    margin: 0 0 8px 0;
+  }
+
+  p {
+    color: $text-secondary;
+    margin: 0;
+    font-size: 14px;
+  }
+}
+
+.admin-page-content {
+  @include glass-effect;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: $box-shadow;
+}
+
+// ==================== 全局组件样式 ====================
+
+// Button 按钮
+.ant-btn {
+  border-radius: $border-radius;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  border: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  }
+
+  &-primary {
+    background: linear-gradient(135deg, $primary-color 0%, $primary-hover 100%);
+    color: white;
+
+    &:hover {
+      background: linear-gradient(135deg, $primary-hover 0%, $primary-active 100%);
+    }
+  }
+
+  &-default {
+    @include glass-effect;
+    color: $text-color;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.9);
+      color: $primary-color;
+    }
+  }
+
+  &-text {
+    background: transparent;
+    box-shadow: none;
+
+    &:hover {
+      background: rgba(14, 165, 233, 0.1);
+      transform: none;
+    }
+  }
+
+  &-link {
+    color: $primary-color;
+    box-shadow: none;
+
+    &:hover {
+      color: $primary-hover;
+      transform: none;
+    }
+  }
+
+  &-dangerous {
+    background: linear-gradient(135deg, $error-color 0%, #dc2626 100%);
+    color: white;
+
+    &:hover {
+      background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+    }
+  }
+}
+
+// Card 卡片
+.ant-card {
+  @include glass-effect;
+  border-radius: 16px;
+  box-shadow: $box-shadow;
+  @include hover-effect;
+
+  &-head {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.5);
+    background: rgba(255, 255, 255, 0.5);
+    border-radius: 16px 16px 0 0;
+    padding: 16px 24px;
+
+    &-title {
+      font-weight: 700;
+      font-size: 18px;
+      color: $text-color;
+    }
+  }
+
+  &-body {
+    padding: 24px;
+  }
+
+  &-bordered {
+    border: 1px solid rgba(255, 255, 255, 0.8);
+  }
+}
+
+// Table 表格
+.ant-table {
+  @include glass-effect;
+  border-radius: $border-radius;
+
+  &-wrapper {
+    border-radius: $border-radius;
+    overflow: hidden;
+  }
+
+  &-thead > tr > th {
+    background: rgba(255, 255, 255, 0.6);
+    border-bottom: 2px solid rgba(14, 165, 233, 0.2);
+    color: $text-color;
+    font-weight: 700;
+    padding: 16px;
+
+    &::before {
+      display: none;
+    }
+  }
+
+  &-tbody > tr {
+    &:hover > td {
+      background: rgba(14, 165, 233, 0.05);
+    }
+
+    > td {
+      border-bottom: 1px solid rgba(255, 255, 255, 0.5);
+      padding: 16px;
+    }
+  }
+
+  &-pagination {
+    margin: 16px 0;
+
+    .ant-pagination-item {
+      @include glass-effect;
+      border-radius: 8px;
+      border: none;
+
+      &-active {
+        background: linear-gradient(135deg, $primary-color 0%, $primary-hover 100%);
+        
+        a {
+          color: white;
+        }
+      }
+    }
+  }
+}
+
+// Modal 对话框
+.ant-modal {
+  &-content {
+    @include glass-effect;
+    border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+    overflow: hidden;
+  }
+
+  &-header {
+    background: rgba(255, 255, 255, 0.5);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.5);
+    padding: 20px 24px;
+    border-radius: 16px 16px 0 0;
+  }
+
+  &-title {
+    font-weight: 700;
+    font-size: 18px;
+    color: $text-color;
+  }
+
+  &-body {
+    padding: 24px;
+  }
+
+  &-footer {
+    border-top: 1px solid rgba(255, 255, 255, 0.5);
+    padding: 16px 24px;
+    background: rgba(255, 255, 255, 0.3);
+  }
+
+  &-close {
+    color: $text-secondary;
+
+    &:hover {
+      color: $text-color;
+    }
+  }
+}
+
+// Form 表单
+.ant-form {
+  &-item {
+    margin-bottom: 20px;
+
+    &-label > label {
+      font-weight: 600;
+      color: $text-color;
+      font-size: 14px;
+    }
+  }
+}
+
+// Input 输入框
+.ant-input,
+.ant-input-number,
+.ant-picker,
+.ant-select-selector {
+  @include glass-effect;
+  border-radius: $border-radius;
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  padding: 10px 16px;
+  transition: all 0.3s ease;
+
+  &:hover {
+    border-color: rgba(14, 165, 233, 0.5);
+    background: rgba(255, 255, 255, 0.85);
+  }
+
+  &:focus,
+  &-focused {
+    border-color: $primary-color;
+    box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.1);
+    background: rgba(255, 255, 255, 0.95);
+  }
+}
+
+.ant-input-affix-wrapper {
+  @include glass-effect;
+  border-radius: $border-radius;
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  padding: 4px 11px;
+
+  &:hover {
+    border-color: rgba(14, 165, 233, 0.5);
+  }
+
+  &-focused {
+    border-color: $primary-color;
+    box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.1);
+  }
+}
+
+// Select 选择器
+.ant-select {
+  &-dropdown {
+    @include glass-effect;
+    border-radius: $border-radius;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+    padding: 8px;
+  }
+
+  &-item {
+    border-radius: 8px;
+    margin: 2px 0;
+
+    &-option-selected {
+      background: rgba(14, 165, 233, 0.1);
+      color: $primary-color;
+      font-weight: 600;
+    }
+
+    &:hover {
+      background: rgba(14, 165, 233, 0.05);
+    }
+  }
+}
+
+// Tag 标签
+.ant-tag {
+  border-radius: 8px;
+  padding: 4px 12px;
+  border: none;
+  font-weight: 500;
+  backdrop-filter: blur(10px);
+
+  &-blue {
+    background: rgba(59, 130, 246, 0.15);
+    color: #1e40af;
+  }
+
+  &-green {
+    background: rgba(16, 185, 129, 0.15);
+    color: #065f46;
+  }
+
+  &-red {
+    background: rgba(239, 68, 68, 0.15);
+    color: #991b1b;
+  }
+
+  &-orange {
+    background: rgba(245, 158, 11, 0.15);
+    color: #92400e;
+  }
+
+  &-cyan {
+    background: rgba(6, 182, 212, 0.15);
+    color: #164e63;
+  }
+
+  &-purple {
+    background: rgba(168, 85, 247, 0.15);
+    color: #6b21a8;
+  }
+}
+
+// Alert 警告提示
+.ant-alert {
+  @include glass-effect;
+  border-radius: $border-radius;
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  padding: 12px 16px;
+
+  &-info {
+    background: rgba(59, 130, 246, 0.1);
+    border-color: rgba(59, 130, 246, 0.3);
+
+    .ant-alert-icon {
+      color: $info-color;
+    }
+  }
+
+  &-success {
+    background: rgba(16, 185, 129, 0.1);
+    border-color: rgba(16, 185, 129, 0.3);
+
+    .ant-alert-icon {
+      color: $success-color;
+    }
+  }
+
+  &-warning {
+    background: rgba(245, 158, 11, 0.1);
+    border-color: rgba(245, 158, 11, 0.3);
+
+    .ant-alert-icon {
+      color: $warning-color;
+    }
+  }
+
+  &-error {
+    background: rgba(239, 68, 68, 0.1);
+    border-color: rgba(239, 68, 68, 0.3);
+
+    .ant-alert-icon {
+      color: $error-color;
+    }
+  }
+}
+
+// Message 全局提示
+.ant-message {
+  &-notice-content {
+    @include glass-effect;
+    border-radius: $border-radius;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+    padding: 12px 20px;
+  }
+}
+
+// Notification 通知提醒框
+.ant-notification {
+  &-notice {
+    @include glass-effect;
+    border-radius: 16px;
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2);
+    padding: 20px 24px;
+  }
+}
+
+// Dropdown 下拉菜单
+.ant-dropdown {
+  &-menu {
+    @include glass-effect;
+    border-radius: $border-radius;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+    padding: 8px;
+
+    &-item {
+      border-radius: 8px;
+      margin: 2px 0;
+      padding: 8px 12px;
+
+      &:hover {
+        background: rgba(14, 165, 233, 0.1);
+        color: $primary-color;
+      }
+
+      &-danger {
+        &:hover {
+          background: rgba(239, 68, 68, 0.1);
+          color: $error-color;
+        }
+      }
+    }
+
+    &-item-divider {
+      background: rgba(255, 255, 255, 0.5);
+      margin: 4px 0;
+    }
+  }
+}
+
+// Tooltip 文字提示
+.ant-tooltip {
+  &-inner {
+    @include glass-effect;
+    border-radius: 8px;
+    padding: 8px 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  }
+
+  &-arrow-content {
+    background: rgba(255, 255, 255, 0.7);
+  }
+}
+
+// Popover 气泡卡片
+.ant-popover {
+  &-inner {
+    @include glass-effect;
+    border-radius: $border-radius;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+  }
+
+  &-inner-content {
+    padding: 16px;
+  }
+
+  &-title {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.5);
+    padding: 12px 16px;
+    font-weight: 600;
+  }
+}
+
+// Drawer 抽屉
+.ant-drawer {
+  &-content-wrapper {
+    box-shadow: -10px 0 30px rgba(0, 0, 0, 0.15);
+  }
+
+  &-content {
+    background: #e8e8e8 !important;
+  }
+
+  &-header {
+    background: rgba(255, 255, 255, 0.8) !important;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+    padding: 20px 24px;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+  }
+
+  &-title {
+    font-weight: 700;
+    font-size: 18px;
+    color: $text-color;
+  }
+
+  &-body {
+    padding: 24px !important;
+    background: transparent !important;
+    height: 100%;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    
+    // Drawer 内的 Form 样式
+    .ant-form {
+      @include glass-effect;
+      padding: 24px;
+      flex: 1;
+      overflow-y: auto;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+
+      &-item {
+        margin-bottom: 20px;
+
+        &-label {
+          padding-bottom: 8px;
+          
+          > label {
+            font-weight: 600;
+            color: $text-color;
+            font-size: 14px;
+            height: auto;
+
+            &::before {
+              margin-right: 4px;
+            }
+          }
+        }
+
+        &-control {
+          &-input {
+            min-height: 40px;
+          }
+        }
+      }
+
+      // Drawer 内的输入框
+      .ant-input,
+      .ant-input-number,
+      .ant-picker {
+        background: white !important;
+        border-radius: 8px;
+        border: 1px solid #d9d9d9;
+        padding: 10px 16px;
+        font-size: 14px;
+        transition: all 0.3s ease;
+        height: 40px;
+
+        &:hover {
+          border-color: $primary-color;
+        }
+
+        &:focus,
+        &-focused {
+          border-color: $primary-color;
+          box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.1);
+        }
+      }
+
+      // Drawer 内的 Select
+      .ant-select {
+        &-selector {
+          background: white !important;
+          border-radius: 8px !important;
+          border: 1px solid #d9d9d9 !important;
+          padding: 4px 11px !important;
+          height: 40px !important;
+          transition: all 0.3s ease;
+
+          .ant-select-selection-search-input {
+            height: 38px !important;
+          }
+
+          .ant-select-selection-item,
+          .ant-select-selection-placeholder {
+            line-height: 38px !important;
+          }
+        }
+
+        &:hover .ant-select-selector {
+          border-color: $primary-color !important;
+        }
+
+        &-focused .ant-select-selector {
+          border-color: $primary-color !important;
+          box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.1) !important;
+        }
+      }
+
+      // Drawer 内的 TextArea
+      .ant-input-textarea {
+        textarea {
+          background: white !important;
+          border-radius: 8px;
+          border: 1px solid #d9d9d9;
+          padding: 10px 16px;
+          font-size: 14px;
+          transition: all 0.3s ease;
+
+          &:hover {
+            border-color: $primary-color;
+          }
+
+          &:focus {
+            border-color: $primary-color;
+            box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.1);
+          }
+        }
+      }
+    }
+  }
+
+  &-footer {
+    border-top: 1px solid rgba(0, 0, 0, 0.06);
+    padding: 16px 24px;
+    background: rgba(255, 255, 255, 0.8) !important;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+  }
+
+  &-close {
+    color: $text-secondary;
+    width: 40px;
+    height: 40px;
+    line-height: 40px;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+
+    &:hover {
+      color: $text-color;
+      background: rgba(0, 0, 0, 0.05);
+    }
+  }
+
+  &-mask {
+    background: rgba(0, 0, 0, 0.45) !important;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+  }
+
+  &-extra {
+    .ant-space {
+      gap: 8px;
+    }
+  }
+}
+
+// Tabs 标签页
+.ant-tabs {
+  &-nav {
+    &::before {
+      border-bottom: 2px solid rgba(255, 255, 255, 0.5);
+    }
+  }
+
+  &-tab {
+    padding: 12px 16px;
+    font-weight: 500;
+    color: $text-secondary;
+    transition: all 0.3s ease;
+
+    &:hover {
+      color: $primary-color;
+    }
+
+    &-active {
+      .ant-tabs-tab-btn {
+        color: $primary-color;
+        font-weight: 700;
+      }
+    }
+  }
+
+  &-ink-bar {
+    background: linear-gradient(90deg, $primary-color 0%, $primary-hover 100%);
+    height: 3px;
+    border-radius: 3px;
+  }
+}
+
+// Pagination 分页
+.ant-pagination {
+  &-item {
+    @include glass-effect;
+    border-radius: 8px;
+    border: none;
+    margin: 0 4px;
+
+    &:hover {
+      background: rgba(14, 165, 233, 0.1);
+      
+      a {
+        color: $primary-color;
+      }
+    }
+
+    &-active {
+      background: linear-gradient(135deg, $primary-color 0%, $primary-hover 100%);
+      
+      a {
+        color: white;
+      }
+
+      &:hover {
+        background: linear-gradient(135deg, $primary-hover 0%, $primary-active 100%);
+      }
+    }
+  }
+
+  &-prev,
+  &-next {
+    @include glass-effect;
+    border-radius: 8px;
+    border: none;
+
+    &:hover {
+      .ant-pagination-item-link {
+        color: $primary-color;
+        background: rgba(14, 165, 233, 0.1);
+      }
+    }
+  }
+}
+
+// Spin 加载中
+.ant-spin {
+  &-dot-item {
+    background-color: $primary-color;
+  }
+}
+
+// Progress 进度条
+.ant-progress {
+  &-bg {
+    background: linear-gradient(90deg, $primary-color 0%, $primary-hover 100%);
+  }
+}
+
+// Switch 开关
+.ant-switch {
+  background: rgba(156, 163, 175, 0.5);
+  backdrop-filter: blur(10px);
+
+  &-checked {
+    background: linear-gradient(135deg, $primary-color 0%, $primary-hover 100%);
+  }
+}
+
+// Radio 单选框
+.ant-radio {
+  &-wrapper {
+    &:hover {
+      .ant-radio-inner {
+        border-color: $primary-color;
+      }
+    }
+  }
+
+  &-checked {
+    .ant-radio-inner {
+      border-color: $primary-color;
+      background-color: $primary-color;
+
+      &::after {
+        background-color: white;
+      }
+    }
+  }
+}
+
+// Checkbox 多选框
+.ant-checkbox {
+  &-wrapper {
+    &:hover {
+      .ant-checkbox-inner {
+        border-color: $primary-color;
+      }
+    }
+  }
+
+  &-checked {
+    .ant-checkbox-inner {
+      background-color: $primary-color;
+      border-color: $primary-color;
+    }
+  }
+}
+
+// Divider 分割线
+.ant-divider {
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+// Badge 徽标数
+.ant-badge {
+  &-count {
+    background: linear-gradient(135deg, $error-color 0%, #dc2626 100%);
+    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+  }
+}
+
+// Avatar 头像
+.ant-avatar {
+  @include glass-effect;
+  border: 2px solid rgba(255, 255, 255, 0.8);
+}
+
+// Descriptions 描述列表
+.ant-descriptions {
+  &-bordered {
+    .ant-descriptions-item-label {
+      background: rgba(255, 255, 255, 0.5);
+      font-weight: 600;
+    }
+
+    .ant-descriptions-item-content {
+      background: rgba(255, 255, 255, 0.3);
+    }
+
+    .ant-descriptions-view {
+      border: 1px solid rgba(255, 255, 255, 0.6);
+      border-radius: $border-radius;
+      overflow: hidden;
+    }
+  }
+}
+
+// Steps 步骤条
+.ant-steps {
+  &-item {
+    &-process {
+      .ant-steps-item-icon {
+        background: linear-gradient(135deg, $primary-color 0%, $primary-hover 100%);
+        border-color: $primary-color;
+      }
+    }
+
+    &-finish {
+      .ant-steps-item-icon {
+        border-color: $primary-color;
+
+        .ant-steps-icon {
+          color: $primary-color;
+        }
+      }
+    }
+  }
+}
+
+// 响应式调整
+@media (min-width: 1920px) {
+  .ant-btn {
+    padding: 10px 24px;
+    font-size: 16px;
+  }
+
+  .ant-card-head-title {
+    font-size: 20px;
+  }
+
+  .ant-table-thead > tr > th,
+  .ant-table-tbody > tr > td {
+    padding: 18px;
+    font-size: 16px;
+  }
+
+  .ant-modal-title {
+    font-size: 20px;
+  }
+
+  .ant-form-item-label > label {
+    font-size: 16px;
+  }
+}
+
+@media (min-width: 2560px) {
+  .ant-btn {
+    padding: 12px 28px;
+    font-size: 18px;
+  }
+
+  .ant-card-head-title {
+    font-size: 22px;
+  }
+
+  .ant-table-thead > tr > th,
+  .ant-table-tbody > tr > td {
+    padding: 20px;
+    font-size: 18px;
+  }
+
+  .ant-modal-title {
+    font-size: 22px;
+  }
+
+  .ant-form-item-label > label {
+    font-size: 18px;
+  }
+}

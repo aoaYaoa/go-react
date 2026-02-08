@@ -18,3 +18,8 @@ func ProvideUserRepository(manager *database.Manager) repositories.UserRepositor
 	// 使用数据库仓储（支持 PostgreSQL, MySQL 等）
 	return repositories.NewDBUserRepository(manager.GetDB())
 }
+
+// ProvideMenuRepository 提供 MenuRepository
+func ProvideMenuRepository(manager *database.Manager) repositories.MenuRepository {
+	return repositories.NewMenuRepository(manager.GetDB())
+}

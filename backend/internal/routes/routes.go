@@ -6,6 +6,8 @@ import (
 	"backend/internal/middlewares"
 
 	"github.com/gin-gonic/gin"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
 type Router struct {
@@ -60,8 +62,16 @@ func (r *Router) SetupRoutes(engine *gin.Engine) {
 	// 应用全局中间件
 	engine.Use(globalMiddlewares...)
 
+	// 根路径重定向到前端
+	engine.GET("/", func(c *gin.Context) {
+		c.Redirect(302, "http://localhost:5173")
+	})
+
 	// 健康检查路由
 	engine.GET("/health", r.handlers.Health.Check)
+
+	// Swagger 文档路由
+	engine.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	// API 路由组
 	api := engine.Group("/api")
@@ -72,6 +82,7 @@ func (r *Router) SetupRoutes(engine *gin.Engine) {
 		// 认证路由（公开访问）
 		auth := api.Group("/auth")
 		{
+			auth.GET("/captcha", r.handlers.Captcha.GetCaptcha)
 			auth.POST("/register", r.handlers.User.Register)
 			auth.POST("/login", r.handlers.User.Login)
 		}

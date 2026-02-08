@@ -8,10 +8,13 @@
  * 使用方式：
  * 此组件是应用的入口点，在 main.tsx 中被渲染
  */
+import { useEffect } from 'react'
 import { RouterProvider } from 'react-router-dom'
+import { App as AntApp } from 'antd'
+import zhCN from 'antd/locale/zh_CN'
+import enUS from 'antd/locale/en_US'
 import { ScreenSizeProvider } from './contexts/ScreenSizeContext'
 import { router } from './router'
-import { useEffect } from 'react'
 
 /**
  * App 主组件
@@ -32,7 +35,9 @@ function App() {
 
   return (
     <ScreenSizeProvider>
-      <RouterProvider router={router} />
+      <AntApp>
+        <RouterProvider router={router} />
+      </AntApp>
     </ScreenSizeProvider>
   )
 }

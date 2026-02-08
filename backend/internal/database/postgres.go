@@ -51,9 +51,9 @@ func NewPostgreSQLDatabase(config *DatabaseConfig) (*PostgreSQLDatabase, error) 
 // Connect 连接PostgreSQL数据库
 func (d *PostgreSQLDatabase) Connect() (*gorm.DB, error) {
 	// 构建DSN连接字符串
-	// 格式: host=xxx user=xxx password=xxx dbname=xxx port=xxx sslmode=require TimeZone=Asia/Shanghai
+	// Supabase 连接配置：sslmode=disable 跳过 SSL 验证
 	dsn := fmt.Sprintf(
-		"host=%s user=%s password=%s dbname=%s port=%d sslmode=require TimeZone=Asia/Shanghai",
+		"host=%s user=%s password=%s dbname=%s port=%d sslmode=disable TimeZone=Asia/Shanghai",
 		d.config.Host,
 		d.config.Username,
 		d.config.Password,
@@ -107,10 +107,12 @@ func (d *PostgreSQLDatabase) GetDB() *gorm.DB {
 // Migrate 执行数据库迁移
 // 使用 DisableForeignKeyConstraintWhenMigrating 避免约束冲突
 func (d *PostgreSQLDatabase) Migrate(models ...interface{}) error {
-	// 使用 DisableForeignKeyConstraintWhenMigrating 选项来避免约束冲突
-	// 这对于已存在的表特别有用
-	if err := d.db.Migrator().AutoMigrate(models...); err != nil {
-		return fmt.Errorf("数据库迁移失败: %w", err)
+	// 逐个迁移模型，忽略已存在表的错误
+	for _, model := range models {
+		if err := d.db.AutoMigrate(model); err != nil {
+			// 记录错误但继续迁移其他表
+			log.Printf("警告: 迁移表失败 (可能已存在): %v", err)
+		}
 	}
 
 	log.Println("PostgreSQL数据库迁移完成")

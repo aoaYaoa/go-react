@@ -31,6 +31,9 @@ type User struct {
 
 	CreatedAt time.Time `json:"created_at" gorm:"type:timestamptz;default:now()"`
 	UpdatedAt time.Time `json:"updated_at" gorm:"type:timestamptz;default:now()"`
+
+	// 关联
+	Roles []Role `json:"roles,omitempty" gorm:"many2many:user_roles;foreignKey:ID;joinForeignKey:UserID;References:ID;joinReferences:RoleID"`
 }
 
 // TableName 指定表名

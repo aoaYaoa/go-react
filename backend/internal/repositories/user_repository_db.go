@@ -59,8 +59,8 @@ func (r *DBUserRepository) FindByID(ctx context.Context, id uuid.UUID) (*models.
 func (r *DBUserRepository) FindByUsername(ctx context.Context, username string) (*models.User, error) {
 	var user models.User
 
-	// 使用Where条件查询用户名
-	if err := r.db.WithContext(ctx).Where("username = ?", username).First(&user).Error; err != nil {
+	// 使用Where条件查询用户名，并预加载角色信息
+	if err := r.db.WithContext(ctx).Preload("Roles").Where("username = ?", username).First(&user).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, errors.New("用户不存在")
 		}

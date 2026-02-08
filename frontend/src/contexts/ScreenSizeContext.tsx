@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
+import type { ReactNode } from 'react'
 import { ScreenSizeContextType } from '../types'
 
 const ScreenSizeContext = createContext<ScreenSizeContextType | undefined>(undefined)

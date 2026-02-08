@@ -1,4 +1,3 @@
-import { useState, useEffect } from 'react'
 import { userService } from '../services/user'
 import type { UserInfo } from '../services/user'
 

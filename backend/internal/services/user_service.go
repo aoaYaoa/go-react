@@ -24,12 +24,16 @@ type UserService interface {
 
 // userService 用户服务实现
 type userService struct {
-	repo repositories.UserRepository
+	repo     repositories.UserRepository
+	menuRepo repositories.MenuRepository
 }
 
 // NewUserService 创建用户服务实例
-func NewUserService(repo repositories.UserRepository) UserService {
-	return &userService{repo: repo}
+func NewUserService(repo repositories.UserRepository, menuRepo repositories.MenuRepository) UserService {
+	return &userService{
+		repo:     repo,
+		menuRepo: menuRepo,
+	}
 }
 
 // Register 用户注册
@@ -79,7 +83,7 @@ func (s *userService) Register(ctx context.Context, req *dto.RegisterRequest) (*
 
 // Login 用户登录
 func (s *userService) Login(ctx context.Context, req *dto.LoginRequest) (*dto.LoginResponse, error) {
-	// 查找用户
+	// 查找用户（预加载角色）
 	user, err := s.repo.FindByUsername(ctx, req.Username)
 	if err != nil {
 		return nil, errors.New("用户名或密码错误")
@@ -97,7 +101,51 @@ func (s *userService) Login(ctx context.Context, req *dto.LoginRequest) (*dto.Lo
 		return nil, errors.New("登录失败")
 	}
 
-	logger.Infof("[UserService] 用户登录成功: id=%s, username=%s", user.ID.String(), user.Username)
+	// 获取用户角色列表
+	logger.Debugf("[UserService] 用户 %s 的角色数量: %d", user.Username, len(user.Roles))
+	for i, role := range user.Roles {
+		logger.Debugf("[UserService] 角色 %d: ID=%s, Name=%s, Code=%s", i, role.ID, role.Name, role.Code)
+	}
+
+	roles := make([]dto.RoleResponse, len(user.Roles))
+	roleIDs := make([]uuid.UUID, len(user.Roles))
+	for i, role := range user.Roles {
+		roles[i] = dto.RoleResponse{
+			ID:          role.ID,
+			Name:        role.Name,
+			Code:        role.Code,
+			Description: role.Description,
+		}
+		roleIDs[i] = role.ID
+	}
+
+	// 根据角色获取菜单
+	var menus []*models.Menu
+	if len(roleIDs) > 0 {
+		menus, err = s.menuRepo.FindByRoleIDs(ctx, roleIDs)
+		if err != nil {
+			logger.Warnf("[UserService] 获取用户菜单失败: %v", err)
+			// 不影响登录，继续执行
+		}
+	}
+
+	// 转换菜单为响应格式
+	menuResponses := make([]dto.MenuResponse, len(menus))
+	for i, menu := range menus {
+		menuResponses[i] = dto.MenuResponse{
+			ID:        menu.ID,
+			ParentID:  menu.ParentID,
+			Name:      menu.Name,
+			Path:      menu.Path,
+			Icon:      menu.Icon,
+			Component: menu.Component,
+			Sort:      menu.Sort,
+			Type:      menu.Type,
+		}
+	}
+
+	logger.Infof("[UserService] 用户登录成功: id=%s, username=%s, roles=%d, menus=%d",
+		user.ID.String(), user.Username, len(roles), len(menuResponses))
 
 	return &dto.LoginResponse{
 		User: dto.RegisterResponse{
@@ -109,6 +157,8 @@ func (s *userService) Login(ctx context.Context, req *dto.LoginRequest) (*dto.Lo
 		Token:     token,
 		TokenType: "Bearer",
 		ExpiresIn: 86400, // 24 小时（秒）
+		Roles:     roles,
+		Menus:     menuResponses,
 	}, nil
 }
 

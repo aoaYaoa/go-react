@@ -3,9 +3,11 @@ package handlers
 import (
 	"backend/internal/dto"
 	"backend/internal/services"
+	"backend/pkg/utils/captcha"
 	"backend/pkg/utils/logger"
 	"backend/pkg/utils/response"
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -77,6 +79,13 @@ func (h *userHandler) Login(c *gin.Context) {
 	if err := c.ShouldBindJSON(&req); err != nil {
 		logger.Warnf("[UserHandler] 登录请求参数错误: %v", err)
 		response.Error(c, "请求参数错误", http.StatusBadRequest)
+		return
+	}
+
+	// 验证验证码（不区分大小写）
+	if !captcha.VerifyCaptcha(req.CaptchaID, strings.ToUpper(req.CaptchaCode)) {
+		logger.Warnf("[UserHandler] 验证码错误: captcha_id=%s, input=%s", req.CaptchaID, req.CaptchaCode)
+		response.Error(c, "验证码错误或已过期", http.StatusBadRequest)
 		return
 	}
 

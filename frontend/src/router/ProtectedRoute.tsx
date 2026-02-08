@@ -1,5 +1,4 @@
-import { Navigate } from 'react-router-dom'
-import { ReactNode } from 'react'
+import type { ReactNode } from 'react'
 import { userService } from '../services/user'
 
 interface ProtectedRouteProps {
@@ -13,6 +12,8 @@ interface ProtectedRouteProps {
  * 使用 JWT Token 认证
  */
 function ProtectedRoute({ children, requiredRole = null }: ProtectedRouteProps) {
+  const location = useLocation()
+  
   // 如果不需要角色，直接返回
   if (requiredRole === null) {
     return children
@@ -21,9 +22,9 @@ function ProtectedRoute({ children, requiredRole = null }: ProtectedRouteProps) 
   // 检查是否已登录
   const isAuthenticated = userService.isAuthenticated()
   
-  // 未认证，重定向到登录页面
+  // 未认证，重定向到登录页面，并保存当前路径用于登录后跳转
   if (!isAuthenticated) {
-    return <Navigate to="/login" replace />
+    return <Navigate to="/login" state={{ from: location.pathname }} replace />
   }
 
   // 获取用户信息
@@ -31,7 +32,7 @@ function ProtectedRoute({ children, requiredRole = null }: ProtectedRouteProps) 
   
   // 如果没有用户信息，重定向到登录页
   if (!user) {
-    return <Navigate to="/login" replace />
+    return <Navigate to="/login" state={{ from: location.pathname }} replace />
   }
 
   // 获取用户角色
@@ -41,6 +42,7 @@ function ProtectedRoute({ children, requiredRole = null }: ProtectedRouteProps) 
   // 支持多个角色：['user', 'admin']
   const allowedRoles = Array.isArray(requiredRole) ? requiredRole : [requiredRole]
   if (!allowedRoles.includes(userRole)) {
+    // 权限不足，重定向到首页
     return <Navigate to="/" replace />
   }
 

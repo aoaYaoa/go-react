@@ -1,0 +1,152 @@
+/* 注册页面样式 */
+.registerContainer {
+  min-height: 100vh;
+  width: 100vw;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.95) 0%, rgba(15, 23, 42, 0.95) 100%);
+  margin: 0;
+  padding: 2rem 0;
+  position: relative;
+  overflow: hidden;
+}
+
+/* 粒子动画容器 */
+.registerContainer::before,
+.registerContainer::after {
+  content: '';
+  position: absolute;
+  width: 300px;
+  height: 300px;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.3;
+  animation: float 20s infinite ease-in-out;
+}
+
+.registerContainer::before {
+  background: radial-gradient(circle, rgba(118, 75, 162, 0.8) 0%, transparent 70%);
+  top: -150px;
+  right: -150px;
+  animation-delay: 0s;
+}
+
+.registerContainer::after {
+  background: radial-gradient(circle, rgba(102, 126, 234, 0.8) 0%, transparent 70%);
+  bottom: -150px;
+  left: -150px;
+  animation-delay: 10s;
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+  }
+  25% {
+    transform: translate(-100px, 100px) scale(1.1);
+  }
+  50% {
+    transform: translate(50px, -100px) scale(0.9);
+  }
+  75% {
+    transform: translate(100px, 50px) scale(1.05);
+  }
+}
+
+.registerCard {
+  width: 100%;
+  max-width: 28rem;
+  margin: 0 1rem;
+  position: relative;
+  z-index: 10;
+}
+
+.cardContent {
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.header {
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.iconWrapper {
+  width: 3.5rem;
+  height: 3.5rem;
+  margin: 0 auto 0.75rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+}
+
+.title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin-bottom: 0.25rem;
+  color: #1f2937;
+}
+
+.subtitle {
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+/* 注册按钮 */
+.registerButton {
+  background: linear-gradient(135deg, #764ba2 0%, #667eea 100%) !important;
+  border: none !important;
+  height: 38px !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+}
+
+/* 分割线 */
+.divider {
+  margin: 12px 0;
+  font-size: 12px;
+}
+
+/* 底部链接 */
+.footer {
+  text-align: center;
+  margin-bottom: 0.5rem;
+}
+
+.footerText {
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+.loginLink {
+  color: #764ba2 !important;
+  font-weight: 600 !important;
+  padding: 0 4px !important;
+  font-size: 0.75rem !important;
+}
+
+/* 提示信息 */
+.infoBox {
+  padding: 0.5rem;
+  background: #eff6ff;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.infoText {
+  font-size: 0.75rem;
+  color: #4b5563;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.infoLabel {
+  font-weight: 600;
+}

@@ -6,13 +6,100 @@
 // biome-ignore lint: disable
 export {}
 declare global {
+  const Activity: typeof import('react').Activity
+  const Alert: typeof import('antd').Alert
+  const App: typeof import('antd').App
+  const ArrowDownOutlined: typeof import('@ant-design/icons').ArrowDownOutlined
+  const ArrowUpOutlined: typeof import('@ant-design/icons').ArrowUpOutlined
   const Avatar: typeof import('antd').Avatar
   const Button: typeof import('antd').Button
   const Card: typeof import('antd').Card
+  const ClockCircleOutlined: typeof import('@ant-design/icons').ClockCircleOutlined
+  const Col: typeof import('antd').Col
+  const CommentOutlined: typeof import('@ant-design/icons').CommentOutlined
+  const DatePicker: typeof import('antd').DatePicker
+  const DeleteOutlined: typeof import('@ant-design/icons').DeleteOutlined
+  const Descriptions: typeof import('antd').Descriptions
   const Divider: typeof import('antd').Divider
+  const DownloadOutlined: typeof import('@ant-design/icons').DownloadOutlined
+  const Drawer: typeof import('antd').Drawer
   const Dropdown: typeof import('antd').Dropdown
+  const EditOutlined: typeof import('@ant-design/icons').EditOutlined
+  const EnvironmentOutlined: typeof import('@ant-design/icons').EnvironmentOutlined
+  const EyeOutlined: typeof import('@ant-design/icons').EyeOutlined
+  const FilterOutlined: typeof import('@ant-design/icons').FilterOutlined
   const Form: typeof import('antd').Form
+  const Fragment: typeof import('react').Fragment
+  const FullscreenOutlined: typeof import('@ant-design/icons').FullscreenOutlined
+  const HeartOutlined: typeof import('@ant-design/icons').HeartOutlined
+  const Image: typeof import('antd').Image
   const Input: typeof import('antd').Input
+  const InputNumber: typeof import('antd').InputNumber
+  const LikeOutlined: typeof import('@ant-design/icons').LikeOutlined
+  const Link: typeof import('react-router-dom').Link
+  const List: typeof import('antd').List
+  const LockOutlined: typeof import('@ant-design/icons').LockOutlined
+  const MailOutlined: typeof import('@ant-design/icons').MailOutlined
+  const Modal: typeof import('antd').Modal
+  const NavLink: typeof import('react-router-dom').NavLink
+  const Navigate: typeof import('react-router-dom').Navigate
+  const Outlet: typeof import('react-router-dom').Outlet
+  const PlayCircleOutlined: typeof import('@ant-design/icons').PlayCircleOutlined
+  const PlusOutlined: typeof import('@ant-design/icons').PlusOutlined
+  const ReloadOutlined: typeof import('@ant-design/icons').ReloadOutlined
+  const Route: typeof import('react-router-dom').Route
+  const Routes: typeof import('react-router-dom').Routes
+  const Row: typeof import('antd').Row
+  const SafetyOutlined: typeof import('@ant-design/icons').SafetyOutlined
+  const SearchOutlined: typeof import('@ant-design/icons').SearchOutlined
+  const Select: typeof import('antd').Select
   const Space: typeof import('antd').Space
+  const Spin: typeof import('antd').Spin
+  const Statistic: typeof import('antd').Statistic
+  const Suspense: typeof import('react').Suspense
+  const Switch: typeof import('antd').Switch
+  const Table: typeof import('antd').Table
+  const Tag: typeof import('antd').Tag
+  const UserOutlined: typeof import('@ant-design/icons').UserOutlined
+  const cache: typeof import('react').cache
+  const cacheSignal: typeof import('react').cacheSignal
+  const createContext: typeof import('react').createContext
+  const createRef: typeof import('react').createRef
+  const forwardRef: typeof import('react').forwardRef
+  const lazy: typeof import('react').lazy
+  const memo: typeof import('react').memo
   const message: typeof import('antd').message
+  const notification: typeof import('antd').notification
+  const startTransition: typeof import('react').startTransition
+  const use: typeof import('react').use
+  const useActionState: typeof import('react').useActionState
+  const useCallback: typeof import('react').useCallback
+  const useContext: typeof import('react').useContext
+  const useDebugValue: typeof import('react').useDebugValue
+  const useDeferredValue: typeof import('react').useDeferredValue
+  const useEffect: typeof import('react').useEffect
+  const useEffectEvent: typeof import('react').useEffectEvent
+  const useHref: typeof import('react-router-dom').useHref
+  const useId: typeof import('react').useId
+  const useImperativeHandle: typeof import('react').useImperativeHandle
+  const useInRouterContext: typeof import('react-router-dom').useInRouterContext
+  const useInsertionEffect: typeof import('react').useInsertionEffect
+  const useLayoutEffect: typeof import('react').useLayoutEffect
+  const useLinkClickHandler: typeof import('react-router-dom').useLinkClickHandler
+  const useLocation: typeof import('react-router-dom').useLocation
+  const useMemo: typeof import('react').useMemo
+  const useNavigate: typeof import('react-router-dom').useNavigate
+  const useNavigationType: typeof import('react-router-dom').useNavigationType
+  const useOptimistic: typeof import('react').useOptimistic
+  const useOutlet: typeof import('react-router-dom').useOutlet
+  const useOutletContext: typeof import('react-router-dom').useOutletContext
+  const useParams: typeof import('react-router-dom').useParams
+  const useReducer: typeof import('react').useReducer
+  const useRef: typeof import('react').useRef
+  const useResolvedPath: typeof import('react-router-dom').useResolvedPath
+  const useRoutes: typeof import('react-router-dom').useRoutes
+  const useSearchParams: typeof import('react-router-dom').useSearchParams
+  const useState: typeof import('react').useState
+  const useSyncExternalStore: typeof import('react').useSyncExternalStore
+  const useTransition: typeof import('react').useTransition
 }

@@ -4,6 +4,8 @@
  */
 import { ConfigProvider } from 'antd'
 import zhCN from 'antd/locale/zh_CN'
+import enUS from 'antd/locale/en_US'
+import type { Locale } from 'antd/es/locale'
 
 // 全局主题配置
 export const antdTheme = {
@@ -13,8 +15,15 @@ export const antdTheme = {
   },
 }
 
-// 全局语言配置
+// 语言映射
+export const antdLocales: Record<string, Locale> = {
+  'zh-CN': zhCN,
+  'en-US': enUS,
+}
+
+// 默认语言
 export const antdLocale = zhCN
+
 
 // ConfigProvider 组件
 export { ConfigProvider }

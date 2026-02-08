@@ -17,6 +17,7 @@ type Container struct {
 type repositoriesHolder struct {
 	Task repositories.TaskRepository
 	User repositories.UserRepository
+	Menu repositories.MenuRepository
 }
 
 type servicesHolder struct {
@@ -50,6 +51,7 @@ func initRepositories(manager *database.Manager) *repositoriesHolder {
 	return &repositoriesHolder{
 		Task: ProvideTaskRepository(manager),
 		User: ProvideUserRepository(manager),
+		Menu: ProvideMenuRepository(manager),
 	}
 }
 
@@ -57,7 +59,7 @@ func initRepositories(manager *database.Manager) *repositoriesHolder {
 func initServices(repos *repositoriesHolder) *servicesHolder {
 	return &servicesHolder{
 		Task:   services.NewTaskService(repos.Task),
-		User:   services.NewUserService(repos.User),
+		User:   services.NewUserService(repos.User, repos.Menu),
 		Health: services.NewHealthService(),
 	}
 }
@@ -65,8 +67,9 @@ func initServices(repos *repositoriesHolder) *servicesHolder {
 // initHandlers 初始化所有 Handler 并组装成 Handlers 结构体
 func initHandlers(svcs *servicesHolder) *handlers.Handlers {
 	return &handlers.Handlers{
-		Task:   handlers.NewTaskHandler(svcs.Task),
-		User:   handlers.NewUserHandler(svcs.User),
-		Health: handlers.NewHealthHandler(svcs.Health),
+		Task:    handlers.NewTaskHandler(svcs.Task),
+		User:    handlers.NewUserHandler(svcs.User),
+		Health:  handlers.NewHealthHandler(svcs.Health),
+		Captcha: handlers.NewCaptchaHandler(),
 	}
 }

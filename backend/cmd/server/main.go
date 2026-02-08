@@ -12,17 +12,19 @@ import (
 	"syscall"
 	"time"
 
+	_ "backend/docs" // 导入 Swagger 文档
+
 	"github.com/gin-gonic/gin"
 )
 
-// @title Go React App API
+// @title SkyTracker API
 // @version 1.0
-// @description This is a sample server for Go React App.
+// @description 实时航班追踪与航空数据可视化平台 API
 // @termsOfService http://swagger.io/terms/
 
 // @contact.name API Support
-// @contact.url http://www.swagger.io/support
-// @contact.email support@swagger.io
+// @contact.url https://github.com/skytracker
+// @contact.email support@skytracker.com
 
 // @license.name Apache 2.0
 // @license.url http://www.apache.org/licenses/LICENSE-2.0.html
@@ -56,10 +58,11 @@ func main() {
 	defer dbManager.Close() // 确保程序退出时关闭数据库连接
 
 	// 执行数据库迁移（自动创建表结构）
-	if err := dbManager.Migrate(); err != nil {
-		logger.Warnf("数据库迁移警告（可能是表已存在）: %v", err)
-		// 不中断程序，继续运行
-	}
+	// 注释掉自动迁移以加快启动速度，需要迁移时手动运行 scripts/migrate.sh
+	// if err := dbManager.Migrate(); err != nil {
+	// 	logger.Warnf("数据库迁移警告（可能是表已存在）: %v", err)
+	// 	// 不中断程序，继续运行
+	// }
 
 	// 初始化依赖容器
 	appContainer, err := container.InitializeContainer(dbManager)

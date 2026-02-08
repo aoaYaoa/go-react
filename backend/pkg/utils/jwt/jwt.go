@@ -53,14 +53,14 @@ type TokenResponse struct {
 // 简化的 JWT 实现（Base64 编码 Header 和 Payload，HMAC 签名）
 // 生产环境建议使用 github.com/golang-jwt/jwt 库
 //
-// @param userID   用户 ID (UUID string)
-// @param username  用户名
-// @param role     用户角色
-// @param secret   签名密钥（可选，默认使用 defaultSecret）
-// @param duration 过期时间（可选，默认 24 小时）
+// 参数:
+//   - userID: 用户 ID (UUID string)
+//   - username: 用户名
+//   - role: 用户角色
+//   - secret: 签名密钥（可选，默认使用 defaultSecret）
+//   - duration: 过期时间（可选，默认 24 小时）
 //
-// @return Token 字符串
-// @return 错误信息
+// 返回: Token 字符串和错误信息
 func GenerateToken(userID string, username string, role string, secret string, duration time.Duration) (string, error) {
 	// 使用默认密钥
 	if secret == "" {
@@ -140,11 +140,11 @@ func GenerateTokenResponse(userID string, username string, role string, secret s
 
 // ValidateToken 验证 JWT Token
 //
-// @param token  Token 字符串
-// @param secret 签名密钥（可选，默认使用 defaultSecret）
+// 参数:
+//   - token: Token 字符串
+//   - secret: 签名密钥（可选，默认使用 defaultSecret）
 //
-// @return 声明信息
-// @return 错误信息
+// 返回: 声明信息和错误信息
 func ValidateToken(token string, secret string) (*Claims, error) {
 	// 使用默认密钥
 	if secret == "" {
@@ -214,10 +214,10 @@ func generateSignature(input string, secret string) string {
 
 // ExtractToken 从请求中提取 Token
 //
-// @param c Gin 上下文
+// 参数:
+//   - c: Gin 上下文
 //
-// @return Token 字符串
-// @return 错误信息
+// 返回: Token 字符串和错误信息
 func ExtractToken(c *gin.Context) (string, error) {
 	authHeader := c.GetHeader(TokenHeader)
 	if authHeader == "" {
@@ -242,10 +242,10 @@ func ExtractToken(c *gin.Context) (string, error) {
 //
 // 从 Token 中提取用户 ID
 //
-// @param c Gin 上下文
+// 参数:
+//   - c: Gin 上下文
 //
-// @return 用户 ID (UUID string)
-// @return 错误信息
+// 返回: 用户 ID (UUID string) 和错误信息
 func GetUserID(c *gin.Context) (string, error) {
 	// 从 Context 中获取（如果已由中间件设置）
 	if userID, exists := c.Get("user_id"); exists {
@@ -276,10 +276,10 @@ func GetUserID(c *gin.Context) (string, error) {
 
 // GetClaims 从请求中获取完整的声明信息
 //
-// @param c Gin 上下文
+// 参数:
+//   - c: Gin 上下文
 //
-// @return 声明信息
-// @return 错误信息
+// 返回: 声明信息和错误信息
 func GetClaims(c *gin.Context) (*Claims, error) {
 	// 从 Token 中提取
 	token, err := ExtractToken(c)
@@ -303,9 +303,10 @@ func GetClaims(c *gin.Context) (*Claims, error) {
 
 // SetTokenCookie 将 Token 设置到 Cookie
 //
-// @param c     Gin 上下文
-// @param token  Token 字符串
-// @param maxAge 最大年龄（秒）
+// 参数:
+//   - c: Gin 上下文
+//   - token: Token 字符串
+//   - maxAge: 最大年龄（秒）
 func SetTokenCookie(c *gin.Context, token string, maxAge int) {
 	c.SetSameSite(http.SameSiteStrictMode)
 	c.SetCookie(

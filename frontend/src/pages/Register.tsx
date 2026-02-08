@@ -1,7 +1,10 @@
-import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { Form, Input, Button, Card, Divider, message } from 'antd'
 import { UserOutlined, LockOutlined, MailOutlined } from '@ant-design/icons'
+import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { userService } from '../services/user'
+import styles from './Register.module.css'
 
 /**
  * 注册表单值
@@ -21,6 +24,7 @@ interface RegisterFormValues {
  * @returns {React.ReactNode} 注册页面
  */
 function Register() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const [form] = Form.useForm<RegisterFormValues>()
   const [loading, setLoading] = useState<boolean>(false)
@@ -32,52 +36,37 @@ function Register() {
     setLoading(true)
 
     try {
-      const result = await userService.register({
+      await userService.register({
         username: values.username,
         email: values.email,
         password: values.password,
       })
       
-      message.success('注册成功！请登录')
-      console.log('注册成功:', result)
-      
+      message.success(t('auth.registerSuccess', '注册成功！请登录'))
+
       // 跳转到登录页
       setTimeout(() => {
         navigate('/login')
       }, 1500)
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : '注册失败，请稍后重试'
+      const errorMessage = err instanceof Error ? err.message : t('auth.registerFailed', '注册失败，请稍后重试')
       message.error(errorMessage)
-      console.error('注册错误:', err)
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <div 
-      className="min-h-screen w-screen flex items-center justify-center"
-      style={{
-        background: 'linear-gradient(135deg, #764ba2 0%, #667eea 100%)',
-        margin: 0,
-        padding: '2rem 0'
-      }}
-    >
-      <div className="w-full max-w-md mx-4">
-        <Card 
-          style={{
-            borderRadius: '16px',
-            boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)'
-          }}
-        >
-          <div className="text-center mb-4">
-            <div className="w-14 h-14 mx-auto mb-2 rounded-full flex items-center justify-center" style={{
-              background: 'linear-gradient(135deg, #764ba2 0%, #667eea 100%)'
-            }}>
-              <UserOutlined className="text-2xl text-white" />
+    <div className={styles.registerContainer}>
+      <ParticlesBackground particleCount={1500} variant="register" />
+      <div className={styles.registerCard}>
+        <Card variant="borderless" className={styles.cardContent}>
+          <div className={styles.header}>
+            <div className={styles.iconWrapper}>
+              <UserOutlined style={{ fontSize: '20px', color: '#fff' }} />
             </div>
-            <h1 className="text-xl font-bold mb-1">创建账户</h1>
-            <p className="text-gray-500 text-xs">加入我们，开始您的旅程</p>
+            <h1 className={styles.title}>{t('auth.createAccount')}</h1>
+            <p className={styles.subtitle}>{t('auth.registerTip')}</p>
           </div>
 
           <Form
@@ -88,72 +77,72 @@ function Register() {
             style={{ marginBottom: 0 }}
           >
             <Form.Item
-              label="用户名"
+              label={t('auth.username')}
               name="username"
               style={{ marginBottom: '12px' }}
               rules={[
-                { required: true, message: '请输入用户名' },
-                { min: 3, message: '用户名长度至少为 3 个字符' },
-                { max: 20, message: '用户名长度不能超过 20 个字符' }
+                { required: true, message: t('auth.usernameRequired') },
+                { min: 3, message: t('auth.usernameLength') },
+                { max: 20, message: t('auth.usernameMaxLength') }
               ]}
             >
               <Input
                 prefix={<UserOutlined />}
-                placeholder="3-20个字符"
+                placeholder={t('auth.usernamePlaceholder')}
                 size="middle"
               />
             </Form.Item>
 
             <Form.Item
-              label="邮箱（可选）"
+              label={t('auth.emailOptional')}
               name="email"
               style={{ marginBottom: '12px' }}
               rules={[
-                { type: 'email', message: '请输入有效的邮箱地址' }
+                { type: 'email', message: t('auth.emailInvalid') }
               ]}
             >
               <Input
                 prefix={<MailOutlined />}
-                placeholder="your@email.com"
+                placeholder={t('auth.emailPlaceholder')}
                 size="middle"
               />
             </Form.Item>
 
             <Form.Item
-              label="密码"
+              label={t('auth.password')}
               name="password"
               style={{ marginBottom: '12px' }}
               rules={[
-                { required: true, message: '请输入密码' },
-                { min: 6, message: '密码长度至少为 6 个字符' }
+                { required: true, message: t('auth.passwordRequired') },
+                { min: 6, message: t('auth.passwordLength') }
               ]}
             >
               <Input.Password
                 prefix={<LockOutlined />}
-                placeholder="至少6个字符"
+                placeholder={t('auth.passwordPlaceholder')}
                 size="middle"
               />
             </Form.Item>
 
             <Form.Item
-              label="确认密码"
+              label={t('auth.confirmPassword')}
               name="confirmPassword"
               style={{ marginBottom: '16px' }}
               rules={[
-                { required: true, message: '请确认密码' },
+                { required: true, message: t('auth.confirmPasswordRequired') },
                 ({ getFieldValue }) => ({
                   validator(_, value) {
                     if (!value || getFieldValue('password') === value) {
                       return Promise.resolve()
                     }
-                    return Promise.reject(new Error('两次输入的密码不一致'))
+                    return Promise.reject(new Error(t('auth.passwordMismatch')))
                   }
                 })
               ]}
             >
               <Input.Password
                 prefix={<LockOutlined />}
-                placeholder="再次输入密码"
+                placeholder={t('auth.confirmPasswordPlaceholder')}
                 size="middle"
               />
             </Form.Item>
@@ -165,39 +154,33 @@ function Register() {
                 block
                 loading={loading}
                 size="middle"
-                style={{
-                  background: 'linear-gradient(135deg, #764ba2 0%, #667eea 100%)',
-                  border: 'none',
-                  height: '38px',
-                  fontSize: '14px',
-                  fontWeight: '600'
-                }}
+                className={styles.registerButton}
               >
-                创建账户
+                {t('auth.createAccount')}
               </Button>
             </Form.Item>
           </Form>
 
-          <Divider plain style={{ margin: '12px 0', fontSize: '12px' }}>或</Divider>
+          <Divider plain className={styles.divider}>{t('common.or', '或')}</Divider>
 
-          <div className="text-center mb-2">
-            <span className="text-gray-600 text-xs">已有账户？</span>
+          <div className={styles.footer}>
+            <span className={styles.footerText}>{t('auth.hasAccount')}</span>
             <Button
               type="link"
               onClick={() => navigate('/login')}
               size="small"
-              style={{ color: '#764ba2', fontWeight: '600', padding: '0 4px', fontSize: '12px' }}
+              className={styles.loginLink}
             >
-              立即登录
+              {t('auth.loginNow')}
             </Button>
           </div>
 
-          <div className="p-2 bg-purple-50 rounded-lg text-center">
-            <p className="text-xs text-gray-600 m-0 leading-tight">
-              注册即表示您同意我们的
-              <span className="text-purple-600 font-semibold cursor-pointer hover:underline"> 服务条款 </span>
-              和
-              <span className="text-purple-600 font-semibold cursor-pointer hover:underline"> 隐私政策</span>
+          <div className={styles.infoBox}>
+            <p className={styles.infoText}>
+              {t('auth.agreeTo')}
+              <span className={styles.infoLabel}>{t('auth.terms')}</span>
+              {t('auth.and')}
+              <span className={styles.infoLabel}>{t('auth.privacy')}</span>
             </p>
           </div>
         </Card>

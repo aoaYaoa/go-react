@@ -14,6 +14,26 @@ export interface User {
   updated_at?: number
 }
 
+// 角色类型
+export interface Role {
+  id: string
+  name: string
+  code: string
+  description: string
+}
+
+// 菜单类型（后端返回）
+export interface Menu {
+  id: string
+  parent_id: string | null
+  name: string
+  path: string
+  icon: string
+  component: string
+  sort: number
+  type: string
+}
+
 // API 响应类型
 export interface ApiResponse<T = any> {
   code?: number
@@ -35,10 +55,12 @@ export interface Task {
 
 // 菜单配置类型
 export interface MenuConfig {
-  path: string
+  key: string
+  path?: string
   label: string
   icon?: ReactNode
   requiredRole: string | null
+  children?: MenuConfig[]
 }
 
 // 路由配置类型

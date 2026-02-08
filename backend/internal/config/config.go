@@ -48,10 +48,16 @@ func LoadConfig() *Config {
 		log.Printf("警告: 未找到.env文件，使用默认配置: %v", err)
 	}
 
+	corsOrigin := getEnv("CORS_ORIGIN", "http://localhost:5173")
+	corsOrigins := strings.Split(corsOrigin, ",")
+	for i := range corsOrigins {
+		corsOrigins[i] = strings.TrimSpace(corsOrigins[i])
+	}
+
 	return &Config{
 		ServerPort:  getEnv("SERVER_PORT", "8080"),
 		ServerMode:  getEnv("SERVER_MODE", "debug"),
-		CORSOrigins: []string{getEnv("CORS_ORIGIN", "http://localhost:5173")},
+		CORSOrigins: corsOrigins,
 
 		// 数据库配置
 		DatabaseType: getEnv("DATABASE_TYPE", "mysql"),

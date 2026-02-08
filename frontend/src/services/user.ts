@@ -1,7 +1,13 @@
 import { fetchWithInterceptor, getErrorMessage, isSuccessResponse, extractError } from '../utils/request'
+import { setCookie, getCookie, deleteCookie, hasCookie } from '../utils/cookie'
 import { ApiResponse } from '../types'
 
 const API_BASE_URL = '/api'
+const TOKEN_COOKIE_NAME = 'auth_token'
+const USER_INFO_COOKIE_NAME = 'user_info'
+const ROLES_COOKIE_NAME = 'user_roles'
+const MENUS_COOKIE_NAME = 'user_menus'
+const TOKEN_EXPIRES_DAYS = 7 // Token 过期时间：7天
 
 /**
  * 注册请求参数
@@ -18,6 +24,16 @@ export interface RegisterRequest {
 export interface LoginRequest {
   username: string
   password: string
+  captcha_id: string
+  captcha_code: string
+}
+
+/**
+ * 验证码响应
+ */
+export interface CaptchaResponse {
+  captcha_id: string
+  captcha_image: string
 }
 
 /**
@@ -48,12 +64,38 @@ export interface LoginResponse {
   token: string
   token_type: string
   expires_in: number
+  roles: Role[]
+  menus: Menu[]
 }
+
+// 导入类型
+import type { Role, Menu } from '../types'
 
 /**
  * 用户服务
  */
 export const userService = {
+  /**
+   * 获取验证码
+   * @returns 验证码信息
+   */
+  getCaptcha: async (): Promise<CaptchaResponse> => {
+    try {
+      const response = await fetchWithInterceptor(`${API_BASE_URL}/auth/captcha`, {
+        method: 'GET',
+      })
+      const result: ApiResponse<CaptchaResponse> = await response.json()
+      
+      if (!isSuccessResponse(result)) {
+        throw new Error(extractError(result))
+      }
+      
+      return result.data!
+    } catch (error) {
+      throw new Error(getErrorMessage(error))
+    }
+  },
+
   /**
    * 用户注册
    * @param data 注册信息
@@ -106,10 +148,12 @@ export const userService = {
         throw new Error(extractError(result))
       }
       
-      // 保存 token 到 localStorage
+      // 保存 token、用户信息、角色和菜单到 Cookie（7天过期）
       if (result.data?.token) {
-        localStorage.setItem('auth_token', result.data.token)
-        localStorage.setItem('user_info', JSON.stringify(result.data.user))
+        setCookie(TOKEN_COOKIE_NAME, result.data.token, TOKEN_EXPIRES_DAYS)
+        setCookie(USER_INFO_COOKIE_NAME, JSON.stringify(result.data.user), TOKEN_EXPIRES_DAYS)
+        setCookie(ROLES_COOKIE_NAME, JSON.stringify(result.data.roles || []), TOKEN_EXPIRES_DAYS)
+        setCookie(MENUS_COOKIE_NAME, JSON.stringify(result.data.menus || []), TOKEN_EXPIRES_DAYS)
       }
       
       return result.data!
@@ -123,9 +167,11 @@ export const userService = {
    */
   logout: async (): Promise<void> => {
     try {
-      // 清除本地存储
-      localStorage.removeItem('auth_token')
-      localStorage.removeItem('user_info')
+      // 清除 Cookie
+      deleteCookie(TOKEN_COOKIE_NAME)
+      deleteCookie(USER_INFO_COOKIE_NAME)
+      deleteCookie(ROLES_COOKIE_NAME)
+      deleteCookie(MENUS_COOKIE_NAME)
       
       // 可选：调用后端登出接口
       // await fetchWithInterceptor(`${API_BASE_URL}/auth/logout`, {
@@ -133,9 +179,11 @@ export const userService = {
       // })
     } catch (error) {
       console.error('登出失败:', error)
-      // 即使失败也清除本地数据
-      localStorage.removeItem('auth_token')
-      localStorage.removeItem('user_info')
+      // 即使失败也清除 Cookie
+      deleteCookie(TOKEN_COOKIE_NAME)
+      deleteCookie(USER_INFO_COOKIE_NAME)
+      deleteCookie(ROLES_COOKIE_NAME)
+      deleteCookie(MENUS_COOKIE_NAME)
     }
   },
 
@@ -145,7 +193,7 @@ export const userService = {
    */
   getProfile: async (): Promise<UserInfo> => {
     try {
-      const token = localStorage.getItem('auth_token')
+      const token = getCookie(TOKEN_COOKIE_NAME)
       if (!token) {
         throw new Error('未登录')
       }
@@ -162,9 +210,9 @@ export const userService = {
         throw new Error(extractError(result))
       }
       
-      // 更新本地存储的用户信息
+      // 更新 Cookie 中的用户信息
       if (result.data) {
-        localStorage.setItem('user_info', JSON.stringify(result.data))
+        setCookie(USER_INFO_COOKIE_NAME, JSON.stringify(result.data), TOKEN_EXPIRES_DAYS)
       }
       
       return result.data!
@@ -174,19 +222,19 @@ export const userService = {
   },
 
   /**
-   * 获取本地存储的 token
+   * 获取 Cookie 中的 token
    * @returns token 字符串或 null
    */
   getToken: (): string | null => {
-    return localStorage.getItem('auth_token')
+    return getCookie(TOKEN_COOKIE_NAME)
   },
 
   /**
-   * 获取本地存储的用户信息
+   * 获取 Cookie 中的用户信息
    * @returns 用户信息或 null
    */
   getLocalUserInfo: (): UserInfo | null => {
-    const userInfoStr = localStorage.getItem('user_info')
+    const userInfoStr = getCookie(USER_INFO_COOKIE_NAME)
     if (!userInfoStr) {
       return null
     }
@@ -199,12 +247,45 @@ export const userService = {
   },
 
   /**
+   * 获取 Cookie 中的角色列表
+   * @returns 角色列表或空数组
+   */
+  getLocalRoles: (): Role[] => {
+    const rolesStr = getCookie(ROLES_COOKIE_NAME)
+    if (!rolesStr) {
+      return []
+    }
+    try {
+      return JSON.parse(rolesStr)
+    } catch (error) {
+      console.error('解析角色列表失败:', error)
+      return []
+    }
+  },
+
+  /**
+   * 获取 Cookie 中的菜单列表
+   * @returns 菜单列表或空数组
+   */
+  getLocalMenus: (): Menu[] => {
+    const menusStr = getCookie(MENUS_COOKIE_NAME)
+    if (!menusStr) {
+      return []
+    }
+    try {
+      return JSON.parse(menusStr)
+    } catch (error) {
+      console.error('解析菜单列表失败:', error)
+      return []
+    }
+  },
+
+  /**
    * 检查是否已登录
    * @returns 是否已登录
    */
   isAuthenticated: (): boolean => {
-    const token = localStorage.getItem('auth_token')
-    return !!token
+    return hasCookie(TOKEN_COOKIE_NAME)
   },
 
   /**
@@ -213,7 +294,7 @@ export const userService = {
    */
   listUsers: async (): Promise<UserInfo[]> => {
     try {
-      const token = localStorage.getItem('auth_token')
+      const token = getCookie(TOKEN_COOKIE_NAME)
       if (!token) {
         throw new Error('未登录')
       }
@@ -231,6 +312,95 @@ export const userService = {
       }
       
       return result.data || []
+    } catch (error) {
+      throw new Error(getErrorMessage(error))
+    }
+  },
+  /**
+   * 创建用户（管理员功能）
+   * @param data 用户数据
+   * @returns 创建的用户信息
+   */
+  createUser: async (data: any): Promise<UserInfo> => {
+    try {
+      const token = getCookie(TOKEN_COOKIE_NAME)
+      if (!token) {
+        throw new Error('未登录')
+      }
+
+      const response = await fetchWithInterceptor(`${API_BASE_URL}/admin/users`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(data),
+      })
+      const result: ApiResponse<UserInfo> = await response.json()
+      
+      if (!isSuccessResponse(result)) {
+        throw new Error(extractError(result))
+      }
+      
+      return result.data!
+    } catch (error) {
+      throw new Error(getErrorMessage(error))
+    }
+  },
+
+  /**
+   * 更新用户（管理员功能）
+   * @param id 用户ID
+   * @param data 更新的数据
+   * @returns 更新后的用户信息
+   */
+  updateUser: async (id: number | string, data: any): Promise<UserInfo> => {
+    try {
+      const token = getCookie(TOKEN_COOKIE_NAME)
+      if (!token) {
+        throw new Error('未登录')
+      }
+
+      const response = await fetchWithInterceptor(`${API_BASE_URL}/admin/users/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(data),
+      })
+      const result: ApiResponse<UserInfo> = await response.json()
+      
+      if (!isSuccessResponse(result)) {
+        throw new Error(extractError(result))
+      }
+      
+      return result.data!
+    } catch (error) {
+      throw new Error(getErrorMessage(error))
+    }
+  },
+
+  /**
+   * 删除用户（管理员功能）
+   * @param id 用户ID
+   */
+  deleteUser: async (id: number | string): Promise<void> => {
+    try {
+      const token = getCookie(TOKEN_COOKIE_NAME)
+      if (!token) {
+        throw new Error('未登录')
+      }
+
+      const response = await fetchWithInterceptor(`${API_BASE_URL}/admin/users/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      })
+      const result: ApiResponse<void> = await response.json()
+      
+      if (!isSuccessResponse(result)) {
+        throw new Error(extractError(result))
+      }
     } catch (error) {
       throw new Error(getErrorMessage(error))
     }

@@ -16,8 +16,10 @@ type RegisterRequest struct {
 
 // LoginRequest 用户登录请求
 type LoginRequest struct {
-	Username string `json:"username" binding:"required"`
-	Password string `json:"password" binding:"required"`
+	Username    string `json:"username" binding:"required"`
+	Password    string `json:"password" binding:"required"`
+	CaptchaID   string `json:"captcha_id" binding:"required"`
+	CaptchaCode string `json:"captcha_code" binding:"required"`
 }
 
 // RegisterResponse 注册响应
@@ -26,6 +28,26 @@ type RegisterResponse struct {
 	Username string    `json:"username"`
 	Email    string    `json:"email"`
 	Role     string    `json:"role"`
+}
+
+// RoleResponse 角色响应
+type RoleResponse struct {
+	ID          uuid.UUID `json:"id"`
+	Name        string    `json:"name"`
+	Code        string    `json:"code"`
+	Description string    `json:"description"`
+}
+
+// MenuResponse 菜单响应
+type MenuResponse struct {
+	ID        uuid.UUID  `json:"id"`
+	ParentID  *uuid.UUID `json:"parent_id"`
+	Name      string     `json:"name"`
+	Path      string     `json:"path"`
+	Icon      string     `json:"icon"`
+	Component string     `json:"component"`
+	Sort      int        `json:"sort"`
+	Type      string     `json:"type"`
 }
 
 // UserResponse 用户信息响应
@@ -44,6 +66,8 @@ type LoginResponse struct {
 	Token     string           `json:"token"`
 	TokenType string           `json:"token_type"`
 	ExpiresIn int64            `json:"expires_in"`
+	Roles     []RoleResponse   `json:"roles"`
+	Menus     []MenuResponse   `json:"menus"`
 }
 
 func ToUserResponse(user *models.User) *UserResponse {

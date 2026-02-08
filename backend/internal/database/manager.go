@@ -62,7 +62,25 @@ func (m *Manager) Migrate() error {
 	modelsToMigrate := []interface{}{
 		&models.User{},
 		&models.Task{},
-		// 在这里添加其他需要迁移的模型
+		&models.Role{},
+		&models.Menu{},
+		&models.Airport{},
+		&models.Airline{},
+		&models.Aircraft{},
+		&models.Operator{},
+		&models.Drone{},
+		&models.NoFlyZone{},
+		&models.SystemLog{},
+		&models.UserRole{},
+		&models.RoleMenu{},
+		&models.Flight{},
+		&models.FlightPosition{},
+		&models.FlightRoute{},
+		&models.FlightHistory{},
+		&models.DroneMission{},
+		&models.DronePosition{},
+		&models.DroneFlightLog{},
+		&models.DroneIncident{},
 	}
 
 	// 执行迁移
