@@ -7,7 +7,7 @@ import { useScreenSize } from '../contexts/ScreenSizeContext'
 import { menuConfig } from '../router'
 import { userService } from '../services/user'
 import { MenuConfig } from '../types'
-import LanguageSwitcher from './LanguageSwitcher'
+// import LanguageSwitcher from './LanguageSwitcher'
 import { buildMenuTree, MenuTreeNode } from '../utils/menuUtils'
 
 // 菜单键到翻译键的映射
@@ -282,8 +282,8 @@ function Navbar() {
               )
             })}
 
-            {/* 语言切换器 */}
-            <LanguageSwitcher />
+            {/* 语言切换器 - 暂时隐藏 */}
+            {/* <LanguageSwitcher /> */}
 
             {/* 用户头像和下拉菜单 或 登录按钮 */}
             {user ? (
