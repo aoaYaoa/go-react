@@ -429,7 +429,7 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 ## 技术栈
 
 ### 后端
-- Go 1.21+
+- Go 1.26+
 - Gin Web Framework
 - GORM (ORM)
 - PostgreSQL / MySQL / SQLite

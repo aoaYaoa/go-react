@@ -127,7 +127,7 @@ func (d *MgdbDatabase) GetDatabase() *mongo.Database {
 
 // Migrate 执行数据库迁移
 // MongoDB不需要显式的迁移，索引会在首次访问时自动创建
-func (d *MgdbDatabase) Migrate(models ...interface{}) error {
+func (d *MgdbDatabase) Migrate(models ...any) error {
 	log.Println("MongoDB数据库迁移检查...")
 
 	// 为users集合创建索引
@@ -138,7 +138,7 @@ func (d *MgdbDatabase) Migrate(models ...interface{}) error {
 		_, err := usersCollection.Indexes().CreateOne(
 			context.Background(),
 			mongo.IndexModel{
-				Keys: bson.M{"username": 1},
+				Keys:    bson.M{"username": 1},
 				Options: options.Index().SetUnique(true),
 			},
 		)
@@ -150,7 +150,7 @@ func (d *MgdbDatabase) Migrate(models ...interface{}) error {
 		_, err = usersCollection.Indexes().CreateOne(
 			context.Background(),
 			mongo.IndexModel{
-				Keys: bson.M{"email": 1},
+				Keys:    bson.M{"email": 1},
 				Options: options.Index().SetUnique(true),
 			},
 		)

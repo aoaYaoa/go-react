@@ -106,7 +106,7 @@ func (d *PostgreSQLDatabase) GetDB() *gorm.DB {
 
 // Migrate 执行数据库迁移
 // 使用 DisableForeignKeyConstraintWhenMigrating 避免约束冲突
-func (d *PostgreSQLDatabase) Migrate(models ...interface{}) error {
+func (d *PostgreSQLDatabase) Migrate(models ...any) error {
 	// 逐个迁移模型，忽略已存在表的错误
 	for _, model := range models {
 		if err := d.db.AutoMigrate(model); err != nil {

@@ -59,7 +59,7 @@ func (m *Manager) Migrate() error {
 	logger.Info("开始执行数据库迁移...")
 
 	// 列出所有需要迁移的模型
-	modelsToMigrate := []interface{}{
+	modelsToMigrate := []any{
 		&models.User{},
 		&models.Task{},
 		&models.Role{},

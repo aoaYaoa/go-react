@@ -104,7 +104,7 @@ func (d *MySQLDatabase) GetDB() *gorm.DB {
 
 // Migrate 执行数据库迁移
 // 自动创建或更新表结构
-func (d *MySQLDatabase) Migrate(models ...interface{}) error {
+func (d *MySQLDatabase) Migrate(models ...any) error {
 	if d.db == nil {
 		return fmt.Errorf("数据库未连接")
 	}

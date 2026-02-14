@@ -29,7 +29,7 @@ type Database interface {
 	// GetDB 获取数据库实例
 	GetDB() *gorm.DB
 	// Migrate 执行数据库迁移
-	Migrate(models ...interface{}) error
+	Migrate(models ...any) error
 	// GetDBType 获取数据库类型
 	GetDBType() DatabaseType
 }

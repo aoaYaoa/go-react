@@ -74,7 +74,7 @@ func AuthMiddleware() gin.HandlerFunc {
 		c.Set("role", claims.Role)
 		c.Set("claims", claims)
 
-		logger.Debugf("[Auth] 认证成功: user_id=%d, username=%s", claims.UserID, claims.Username)
+		logger.Debugf("[Auth] 认证成功: user_id=%s, username=%s", claims.UserID, claims.Username)
 
 		c.Next()
 	}
@@ -97,7 +97,7 @@ func OptionalAuth() gin.HandlerFunc {
 						c.Set("username", claims.Username)
 						c.Set("role", claims.Role)
 						c.Set("claims", claims)
-						logger.Debugf("[OptionalAuth] 检测到有效认证令牌: user_id=%d", claims.UserID)
+						logger.Debugf("[OptionalAuth] 检测到有效认证令牌: user_id=%s", claims.UserID)
 					} else {
 						logger.Debugf("[OptionalAuth] 检测到无效认证令牌: %s", token[:min(len(token), 10)]+"...")
 					}

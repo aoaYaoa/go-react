@@ -71,34 +71,34 @@ func Init() {
 	WarnLogger = log.New(outWriter, Yellow+"[WARN] "+Reset, log.Ldate|log.Ltime|log.Lshortfile)
 }
 
-func Info(v ...interface{}) {
+func Info(v ...any) {
 	InfoLogger.Println(v...)
 }
 
-func Error(v ...interface{}) {
+func Error(v ...any) {
 	ErrorLogger.Println(v...)
 }
 
-func Debug(v ...interface{}) {
+func Debug(v ...any) {
 	DebugLogger.Println(v...)
 }
 
-func Warn(v ...interface{}) {
+func Warn(v ...any) {
 	WarnLogger.Println(v...)
 }
 
-func Infof(format string, v ...interface{}) {
+func Infof(format string, v ...any) {
 	InfoLogger.Printf(format, v...)
 }
 
-func Errorf(format string, v ...interface{}) {
+func Errorf(format string, v ...any) {
 	ErrorLogger.Printf(format, v...)
 }
 
-func Debugf(format string, v ...interface{}) {
+func Debugf(format string, v ...any) {
 	DebugLogger.Printf(format, v...)
 }
 
-func Warnf(format string, v ...interface{}) {
+func Warnf(format string, v ...any) {
 	WarnLogger.Printf(format, v...)
 }

@@ -43,7 +43,7 @@ var (
 	// 缓存已解析的路径
 	encryptedCache = make(map[string]bool)
 	decryptedCache = make(map[string]bool)
-	cacheMutex      sync.RWMutex
+	cacheMutex     sync.RWMutex
 )
 
 // DecryptionMiddleware 请求解密中间件
@@ -52,11 +52,13 @@ var (
 // 前端发送格式：{ "encrypted": true, "data": "<base64加密数据>" }
 //
 // 使用示例：
-//   router.Use(middlewares.DecryptionMiddleware())
+//
+//	router.Use(middlewares.DecryptionMiddleware())
 //
 // 配置说明：
-//   在 encryptedEndpoints 中添加需要解密的接口路径
-//   支持通配符匹配，例如："/api/tasks/*"
+//
+//	在 encryptedEndpoints 中添加需要解密的接口路径
+//	支持通配符匹配，例如："/api/tasks/*"
 func DecryptionMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// 检查是否需要解密
@@ -84,7 +86,7 @@ func DecryptionMiddleware() gin.HandlerFunc {
 		}
 
 		// 解析 JSON
-		var requestData map[string]interface{}
+		var requestData map[string]any
 		if err := json.Unmarshal(bodyBytes, &requestData); err != nil {
 			// 不是 JSON 格式，跳过解密
 			c.Next()
@@ -133,10 +135,12 @@ func DecryptionMiddleware() gin.HandlerFunc {
 // 响应格式：{ "encrypted": true, "data": "<base64加密数据>" }
 //
 // 使用示例：
-//   router.Use(middlewares.EncryptionMiddleware())
+//
+//	router.Use(middlewares.EncryptionMiddleware())
 //
 // 配置说明：
-//   在 decryptedEndpoints 中添加需要加密响应的接口路径
+//
+//	在 decryptedEndpoints 中添加需要加密响应的接口路径
 func EncryptionMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// 检查是否需要加密响应
@@ -145,11 +149,11 @@ func EncryptionMiddleware() gin.HandlerFunc {
 			return
 		}
 
-	// 使用 writer 包装器捕获响应
-	writer := &responseWriter{
-		ResponseWriter: c.Writer,
-		buffer:       bytes.NewBuffer(nil),
-	}
+		// 使用 writer 包装器捕获响应
+		writer := &responseWriter{
+			ResponseWriter: c.Writer,
+			buffer:         bytes.NewBuffer(nil),
+		}
 		c.Writer = writer
 
 		// 处理请求
@@ -174,7 +178,7 @@ func EncryptionMiddleware() gin.HandlerFunc {
 		}
 
 		// 解析响应数据
-		var data map[string]interface{}
+		var data map[string]any
 		if err := json.Unmarshal(responseData, &data); err != nil {
 			return // 解析失败，不加密
 		}
@@ -201,7 +205,7 @@ func EncryptionMiddleware() gin.HandlerFunc {
 		logger.Debugf("[Encryption] 响应加密成功: %s", encryptedData[:min(len(encryptedData), 32)]+"...")
 
 		// 构建加密响应
-		encryptedResponse := map[string]interface{}{
+		encryptedResponse := map[string]any{
 			encryptedField: true,
 			dataField:      encryptedData,
 		}

@@ -6,7 +6,7 @@ import (
 )
 
 type HealthService interface {
-	CheckHealth(ctx context.Context) map[string]interface{}
+	CheckHealth(ctx context.Context) map[string]any
 }
 
 type healthServiceImpl struct{}
@@ -16,8 +16,8 @@ func NewHealthService() HealthService {
 	return &healthServiceImpl{}
 }
 
-func (s *healthServiceImpl) CheckHealth(ctx context.Context) map[string]interface{} {
-	return map[string]interface{}{
+func (s *healthServiceImpl) CheckHealth(ctx context.Context) map[string]any {
+	return map[string]any{
 		"status":    "ok",
 		"message":   "服务器运行正常",
 		"service":   "go-gin-api",

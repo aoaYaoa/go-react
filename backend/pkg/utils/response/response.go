@@ -9,15 +9,15 @@ import (
 )
 
 type Response struct {
-	Success bool        `json:"success"`
-	Code    int         `json:"code,omitempty"` // 业务错误码
-	Message string      `json:"message,omitempty"`
-	Data    interface{} `json:"data,omitempty"`
-	Error   string      `json:"error,omitempty"`
+	Success bool   `json:"success"`
+	Code    int    `json:"code,omitempty"` // 业务错误码
+	Message string `json:"message,omitempty"`
+	Data    any    `json:"data,omitempty"`
+	Error   string `json:"error,omitempty"`
 }
 
 // Success 成功响应
-func Success(c *gin.Context, data interface{}) {
+func Success(c *gin.Context, data any) {
 	c.JSON(http.StatusOK, Response{
 		Success: true,
 		Code:    200,
@@ -26,7 +26,7 @@ func Success(c *gin.Context, data interface{}) {
 }
 
 // SuccessWithMessage 成功响应带消息
-func SuccessWithMessage(c *gin.Context, message string, data interface{}) {
+func SuccessWithMessage(c *gin.Context, message string, data any) {
 	c.JSON(http.StatusOK, Response{
 		Success: true,
 		Code:    200,
@@ -36,7 +36,7 @@ func SuccessWithMessage(c *gin.Context, message string, data interface{}) {
 }
 
 // SuccessWithData 成功响应带数据（别名函数）
-func SuccessWithData(c *gin.Context, message string, data interface{}) {
+func SuccessWithData(c *gin.Context, message string, data any) {
 	SuccessWithMessage(c, message, data)
 }
 
@@ -80,7 +80,7 @@ func Fail(c *gin.Context, err error) {
 }
 
 // Created 创建成功响应
-func Created(c *gin.Context, data interface{}) {
+func Created(c *gin.Context, data any) {
 	c.JSON(http.StatusCreated, Response{
 		Success: true,
 		Code:    201,

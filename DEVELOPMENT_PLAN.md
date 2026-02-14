@@ -807,7 +807,7 @@ type UserRole =
 
 ### 后端技术栈
 ```
-- 语言: Go 1.21+
+- 语言: Go 1.26+
 - Web 框架: Gin
 - 数据库: PostgreSQL 15+ (Supabase)
 - ORM: GORM
