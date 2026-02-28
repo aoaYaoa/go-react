@@ -107,12 +107,28 @@ func main() {
 				RetryBackoff:    150 * time.Millisecond,
 				ShutdownTimeout: 3 * time.Second,
 			})
+
+			outboxStore, outboxErr := messaging.NewGormOutboxStore(dbManager.GetDB())
+			if outboxErr != nil {
+				logger.Warnf("Outbox 初始化失败，将仅使用异步发布: %v", outboxErr)
+			} else {
+				publisher = messaging.NewOutboxPublisher(outboxStore, publisher, messaging.OutboxPublisherConfig{
+					PollInterval:    500 * time.Millisecond,
+					BatchSize:       100,
+					PublishTimeout:  2 * time.Second,
+					MaxRetries:      6,
+					RetryBackoff:    200 * time.Millisecond,
+					ShutdownTimeout: 5 * time.Second,
+				})
+				logger.Infof("Kafka Outbox 已启用: table=event_outbox")
+			}
+
 			defer func() {
 				if err := publisher.Close(); err != nil {
 					logger.Warnf("关闭 Kafka 发布器失败: %v", err)
 				}
 			}()
-			logger.Infof("Kafka 事件发布已启用(异步重试): brokers=%s topic=%s",
+			logger.Infof("Kafka 事件发布已启用(异步重试+Outbox): brokers=%s topic=%s",
 				config.AppConfig.KafkaBrokers, config.AppConfig.KafkaTopic)
 		}
 	}

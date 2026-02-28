@@ -34,6 +34,7 @@ func (r *Router) SetupRoutes(engine *gin.Engine) {
 	// 构建全局中间件列表
 	globalMiddlewares := []gin.HandlerFunc{
 		middlewares.RequestID(),                        // 1. 生成请求ID
+		middlewares.Metrics(),                          // 2. 指标采集
 		middlewares.Logger(),                           // 2. 记录日志
 		middlewares.Recovery(),                         // 3. 错误恢复
 		middlewares.CORS(config.AppConfig.CORSOrigins), // 4. 跨域支持
@@ -69,6 +70,7 @@ func (r *Router) SetupRoutes(engine *gin.Engine) {
 
 	// 健康检查路由
 	engine.GET("/health", r.handlers.Health.Check)
+	engine.GET("/metrics", middlewares.MetricsHandler())
 
 	// Swagger 文档路由
 	engine.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
