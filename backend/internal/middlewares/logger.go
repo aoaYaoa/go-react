@@ -22,12 +22,13 @@ func Logger() gin.HandlerFunc {
 		method := c.Request.Method
 		ip := c.ClientIP()
 		reqID := c.Writer.Header().Get("X-Request-ID")
+		traceID := c.Writer.Header().Get("X-Trace-ID")
 
 		if query != "" {
 			path = path + "?" + query
 		}
 
-		logger.Infof("[%s] [%s] %s %s %d %v", reqID, ip, method, path, status, latency)
+		logger.Infof("[%s] [%s] [%s] %s %s %d %v", reqID, traceID, ip, method, path, status, latency)
 	}
 }
 

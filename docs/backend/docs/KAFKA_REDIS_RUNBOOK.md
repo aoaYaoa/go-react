@@ -65,6 +65,7 @@ KAFKA_SSL_KEY_FILE=./certs/kafka/service.key
 4. 查看数据库 `event_outbox`：
    - 正常情况下事件会逐步从 `pending` 变为 `sent`
    - Kafka 暂时不可达时，会留在 `pending` 并累积 `attempts`
+   - 达到最大投递次数后会转为 `failed`
 
 ## 5. 健康检查与指标
 
@@ -73,6 +74,10 @@ KAFKA_SSL_KEY_FILE=./certs/kafka/service.key
   - 异常时返回 `503`
 - 指标：`GET /metrics`
   - 包含请求计数、时延、并发数
+  - 包含运行时指标：goroutines、内存、进程 uptime
+- 链路追踪头：
+  - `X-Trace-ID` 可由网关/上游传入
+  - 未传入时后端自动生成并回传
 
 ## 6. 常见问题
 
@@ -97,6 +102,29 @@ KAFKA_SSL_KEY_FILE=./certs/kafka/service.key
 1. 检查 `event_outbox` 是否为 `pending`
 2. 检查 Kafka 连通性与证书
 3. 恢复后观察 Outbox 是否自动补发为 `sent`
+
+### 6.4 Outbox 出现 `failed` 事件
+
+原因：事件已达到最大投递次数。
+
+处理：
+
+1. 检查 `last_error`，定位 Kafka 凭据/网络/Topic 配置问题
+2. 修复后按需做人工重放（重新入队）或补偿处理
+3. 观察新事件是否正常进入 `sent`
+
+### 6.5 `event_outbox` 表持续增长
+
+说明：系统会定时清理历史 `sent` 事件；若增长异常，通常是：
+
+1. 清理周期尚未到达
+2. 大量事件停留在 `pending/failed`
+
+处理：
+
+1. 先看状态分布（`pending/sent/failed`）
+2. 优先处理 `pending/failed` 的根因
+3. 必要时增加数据库归档/清理任务
 
 ## 7. 相关代码位置
 

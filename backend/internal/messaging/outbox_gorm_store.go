@@ -9,8 +9,6 @@ import (
 	"gorm.io/gorm"
 )
 
-const outboxStatusPending = "pending"
-
 type outboxRecord struct {
 	ID          string     `gorm:"type:varchar(64);primaryKey"`
 	EventKey    string     `gorm:"type:varchar(128);not null;index"`
@@ -56,7 +54,7 @@ func (s *gormOutboxStore) Enqueue(ctx context.Context, event OutboxEvent) (Outbo
 		Payload:     append([]byte(nil), event.Payload...),
 		Attempts:    event.Attempts,
 		NextRetryAt: event.NextRetryAt.UTC(),
-		Status:      outboxStatusPending,
+		Status:      OutboxStatusPending,
 		LastError:   event.LastError,
 	}
 	if err := s.db.WithContext(ctx).Create(&record).Error; err != nil {
@@ -67,6 +65,7 @@ func (s *gormOutboxStore) Enqueue(ctx context.Context, event OutboxEvent) (Outbo
 		ID:          record.ID,
 		Key:         record.EventKey,
 		Payload:     append([]byte(nil), record.Payload...),
+		Status:      record.Status,
 		Attempts:    record.Attempts,
 		NextRetryAt: record.NextRetryAt,
 		LastError:   record.LastError,
@@ -83,7 +82,7 @@ func (s *gormOutboxStore) ListPending(ctx context.Context, now time.Time, limit 
 
 	var rows []outboxRecord
 	if err := s.db.WithContext(ctx).
-		Where("status = ? AND next_retry_at <= ?", outboxStatusPending, now.UTC()).
+		Where("status = ? AND next_retry_at <= ?", OutboxStatusPending, now.UTC()).
 		Order("next_retry_at ASC, created_at ASC").
 		Limit(limit).
 		Find(&rows).Error; err != nil {
@@ -96,6 +95,7 @@ func (s *gormOutboxStore) ListPending(ctx context.Context, now time.Time, limit 
 			ID:          row.ID,
 			Key:         row.EventKey,
 			Payload:     append([]byte(nil), row.Payload...),
+			Status:      row.Status,
 			Attempts:    row.Attempts,
 			NextRetryAt: row.NextRetryAt,
 			LastError:   row.LastError,
@@ -113,7 +113,7 @@ func (s *gormOutboxStore) MarkSent(ctx context.Context, id string) error {
 		Model(&outboxRecord{}).
 		Where("id = ?", id).
 		Updates(map[string]any{
-			"status":     "sent",
+			"status":     OutboxStatusSent,
 			"last_error": "",
 			"sent_at":    &now,
 		}).Error
@@ -127,8 +127,44 @@ func (s *gormOutboxStore) MarkRetry(ctx context.Context, id string, nextRetryAt 
 			"attempts":      gorm.Expr("attempts + ?", 1),
 			"next_retry_at": nextRetryAt.UTC(),
 			"last_error":    lastErr,
-			"status":        outboxStatusPending,
+			"status":        OutboxStatusPending,
 		}).Error
+}
+
+func (s *gormOutboxStore) MarkFailed(ctx context.Context, id string, lastErr string) error {
+	return s.db.WithContext(ctx).
+		Model(&outboxRecord{}).
+		Where("id = ?", id).
+		Updates(map[string]any{
+			"attempts":   gorm.Expr("attempts + ?", 1),
+			"last_error": lastErr,
+			"status":     OutboxStatusFailed,
+		}).Error
+}
+
+func (s *gormOutboxStore) CleanupSentBefore(ctx context.Context, before time.Time, limit int) (int64, error) {
+	if limit <= 0 {
+		limit = 1000
+	}
+
+	var ids []string
+	if err := s.db.WithContext(ctx).
+		Model(&outboxRecord{}).
+		Where("status = ? AND sent_at IS NOT NULL AND sent_at < ?", OutboxStatusSent, before.UTC()).
+		Order("sent_at ASC").
+		Limit(limit).
+		Pluck("id", &ids).Error; err != nil {
+		return 0, err
+	}
+	if len(ids) == 0 {
+		return 0, nil
+	}
+
+	res := s.db.WithContext(ctx).Where("id IN ?", ids).Delete(&outboxRecord{})
+	if res.Error != nil {
+		return 0, res.Error
+	}
+	return res.RowsAffected, nil
 }
 
 func (s *gormOutboxStore) HealthCheck(ctx context.Context) error {

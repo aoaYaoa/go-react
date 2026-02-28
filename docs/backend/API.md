@@ -25,6 +25,7 @@
 - 成功时主要使用 `success=true` + `data`
 - 失败时主要使用 `success=false` + `error`
 - `X-Request-ID` 在响应头中返回
+- `X-Trace-ID` 在响应头中返回（若请求中携带会透传）
 
 ## 核心接口
 
@@ -58,3 +59,8 @@
 - `GET /metrics`：Prometheus 指标导出
 
 健康检查在依赖异常时返回 `503`，并在 `data.components` 中标记异常组件。
+
+## 观测相关头
+
+- `X-Request-ID`：请求级追踪 ID
+- `X-Trace-ID`：链路级追踪 ID（可由上游传入）

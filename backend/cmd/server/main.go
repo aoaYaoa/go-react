@@ -116,12 +116,15 @@ func main() {
 				logger.Warnf("Outbox 初始化失败，将仅使用异步发布: %v", outboxErr)
 			} else {
 				publisher = messaging.NewOutboxPublisher(outboxStore, publisher, messaging.OutboxPublisherConfig{
-					PollInterval:    500 * time.Millisecond,
-					BatchSize:       100,
-					PublishTimeout:  2 * time.Second,
-					MaxRetries:      6,
-					RetryBackoff:    200 * time.Millisecond,
-					ShutdownTimeout: 5 * time.Second,
+					PollInterval:        500 * time.Millisecond,
+					BatchSize:           100,
+					PublishTimeout:      2 * time.Second,
+					MaxDeliveryAttempts: 6,
+					RetryBackoff:        200 * time.Millisecond,
+					CleanupInterval:     10 * time.Minute,
+					SentRetention:       7 * 24 * time.Hour,
+					CleanupBatchSize:    1000,
+					ShutdownTimeout:     5 * time.Second,
 				})
 				logger.Infof("Kafka Outbox 已启用: table=event_outbox")
 			}

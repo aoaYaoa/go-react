@@ -3,6 +3,7 @@ package middlewares
 import (
 	"fmt"
 	"net/http"
+	"runtime"
 	"sort"
 	"strconv"
 	"strings"
@@ -30,6 +31,7 @@ type metricsCollector struct {
 	durationCount map[durationMetricKey]uint64
 	durationSum   map[durationMetricKey]float64
 	inflight      int64
+	startedAt     time.Time
 }
 
 var collector = newMetricsCollector()
@@ -39,6 +41,7 @@ func newMetricsCollector() *metricsCollector {
 		requestTotal:  make(map[requestMetricKey]uint64),
 		durationCount: make(map[durationMetricKey]uint64),
 		durationSum:   make(map[durationMetricKey]float64),
+		startedAt:     time.Now().UTC(),
 	}
 }
 
@@ -161,6 +164,29 @@ func (m *metricsCollector) exportText() string {
 	b.WriteString("# HELP http_inflight_requests Current in-flight HTTP requests.\n")
 	b.WriteString("# TYPE http_inflight_requests gauge\n")
 	b.WriteString(fmt.Sprintf("http_inflight_requests %d\n", m.inflight))
+
+	var mem runtime.MemStats
+	runtime.ReadMemStats(&mem)
+
+	b.WriteString("# HELP go_goroutines Number of goroutines.\n")
+	b.WriteString("# TYPE go_goroutines gauge\n")
+	b.WriteString(fmt.Sprintf("go_goroutines %d\n", runtime.NumGoroutine()))
+
+	b.WriteString("# HELP go_memstats_alloc_bytes Number of bytes allocated and still in use.\n")
+	b.WriteString("# TYPE go_memstats_alloc_bytes gauge\n")
+	b.WriteString(fmt.Sprintf("go_memstats_alloc_bytes %d\n", mem.Alloc))
+
+	b.WriteString("# HELP go_memstats_heap_inuse_bytes Number of heap bytes in use.\n")
+	b.WriteString("# TYPE go_memstats_heap_inuse_bytes gauge\n")
+	b.WriteString(fmt.Sprintf("go_memstats_heap_inuse_bytes %d\n", mem.HeapInuse))
+
+	uptime := time.Since(m.startedAt).Seconds()
+	if uptime < 0 {
+		uptime = 0
+	}
+	b.WriteString("# HELP process_uptime_seconds Process uptime in seconds.\n")
+	b.WriteString("# TYPE process_uptime_seconds gauge\n")
+	b.WriteString(fmt.Sprintf("process_uptime_seconds %.0f\n", uptime))
 
 	return b.String()
 }

@@ -21,17 +21,18 @@
 全局中间件在 `internal/routes/routes.go` 注册，顺序如下：
 
 1. `RequestID`：设置 `X-Request-ID`
-2. `Metrics`：采集请求计数、时延、并发数
-3. `Logger`：请求日志
-4. `Recovery`：panic 恢复
-5. `CORS`
-6. `Security`
-7. `NoCache`
-8. `ContentType`
-9. `RateLimit`
-10. `IPAccess`（按配置可选）
-11. `Compression`
-12. `Decryption` + `Signature` + `Encryption`（`ENABLE_SIGNATURE=true` 时启用）
+2. `TraceID`：透传或生成 `X-Trace-ID`
+3. `Metrics`：采集请求计数、时延、并发数与运行时指标
+4. `Logger`：请求日志（含 request id / trace id）
+5. `Recovery`：panic 恢复
+6. `CORS`
+7. `Security`
+8. `NoCache`
+9. `ContentType`
+10. `RateLimit`
+11. `IPAccess`（按配置可选）
+12. `Compression`
+13. `Decryption` + `Signature` + `Encryption`（`ENABLE_SIGNATURE=true` 时启用）
 
 ## 3. 认证与安全
 
@@ -64,6 +65,16 @@
 - 进程重启后，`event_outbox` 未发送事件仍可继续补发
 - 临时网络抖动由异步重试吸收
 
+Outbox 状态：
+
+- `pending`：待发送/重试
+- `sent`：发送成功
+- `failed`：达到最大投递次数后进入失败终态（不再无限重试）
+
+Outbox 维护：
+
+- 定时清理历史 `sent` 事件（按保留时间和批次执行）
+
 ## 5. 健康检查与可观测性
 
 ### 5.1 健康检查
@@ -87,6 +98,17 @@
   - `http_requests_total`
   - `http_request_duration_seconds_sum/count`
   - `http_inflight_requests`
+  - `go_goroutines`
+  - `go_memstats_alloc_bytes`
+  - `go_memstats_heap_inuse_bytes`
+  - `process_uptime_seconds`
+
+### 5.3 Trace 标识
+
+- 请求支持透传 `X-Trace-ID`
+- 若未提供则服务自动生成
+- 响应头会返回 `X-Trace-ID`
+- 日志中会输出 trace id，便于跨服务排查
 
 ## 6. 启动流程（关键步骤）
 

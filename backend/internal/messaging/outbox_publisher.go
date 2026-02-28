@@ -9,13 +9,17 @@ import (
 )
 
 type OutboxPublisherConfig struct {
-	PollInterval    time.Duration
-	BatchSize       int
-	PublishTimeout  time.Duration
-	MaxRetries      int
-	RetryBackoff    time.Duration
-	MaxRetryBackoff time.Duration
-	ShutdownTimeout time.Duration
+	PollInterval        time.Duration
+	BatchSize           int
+	PublishTimeout      time.Duration
+	MaxRetries          int
+	MaxDeliveryAttempts int
+	RetryBackoff        time.Duration
+	MaxRetryBackoff     time.Duration
+	CleanupInterval     time.Duration
+	SentRetention       time.Duration
+	CleanupBatchSize    int
+	ShutdownTimeout     time.Duration
 }
 
 type outboxPublisher struct {
@@ -23,9 +27,10 @@ type outboxPublisher struct {
 	target EventPublisher
 	cfg    OutboxPublisherConfig
 
-	ticker *time.Ticker
-	signal chan struct{}
-	stopCh chan struct{}
+	ticker  *time.Ticker
+	cleaner *time.Ticker
+	signal  chan struct{}
+	stopCh  chan struct{}
 
 	mu        sync.RWMutex
 	isClosed  bool
@@ -43,12 +48,13 @@ func NewOutboxPublisher(store OutboxStore, target EventPublisher, cfg OutboxPubl
 
 	cfg = withDefaultOutboxConfig(cfg)
 	p := &outboxPublisher{
-		store:  store,
-		target: target,
-		cfg:    cfg,
-		ticker: time.NewTicker(cfg.PollInterval),
-		signal: make(chan struct{}, 1),
-		stopCh: make(chan struct{}),
+		store:   store,
+		target:  target,
+		cfg:     cfg,
+		ticker:  time.NewTicker(cfg.PollInterval),
+		cleaner: time.NewTicker(cfg.CleanupInterval),
+		signal:  make(chan struct{}, 1),
+		stopCh:  make(chan struct{}),
 	}
 
 	p.wg.Add(1)
@@ -131,6 +137,7 @@ func (p *outboxPublisher) Close() error {
 func (p *outboxPublisher) loop() {
 	defer p.wg.Done()
 	defer p.ticker.Stop()
+	defer p.cleaner.Stop()
 
 	for {
 		select {
@@ -138,6 +145,8 @@ func (p *outboxPublisher) loop() {
 			return
 		case <-p.ticker.C:
 			p.flush()
+		case <-p.cleaner.C:
+			p.cleanupSent()
 		case <-p.signal:
 			p.flush()
 		}
@@ -169,6 +178,16 @@ func (p *outboxPublisher) publishOne(event OutboxEvent) {
 		return
 	}
 
+	attempt := event.Attempts + 1
+	if attempt >= p.cfg.MaxDeliveryAttempts {
+		if markErr := p.store.MarkFailed(context.Background(), event.ID, err.Error()); markErr != nil {
+			logger.Warnf("[Outbox] 标记失败终态失败: id=%s err=%v", event.ID, markErr)
+			return
+		}
+		logger.Errorf("[Outbox] 事件达到最大重试次数，标记失败: id=%s attempts=%d err=%v", event.ID, attempt, err)
+		return
+	}
+
 	backoff := p.nextBackoff(event.Attempts + 1)
 	nextRetry := time.Now().UTC().Add(backoff)
 	if markErr := p.store.MarkRetry(context.Background(), event.ID, nextRetry, err.Error()); markErr != nil {
@@ -176,6 +195,20 @@ func (p *outboxPublisher) publishOne(event OutboxEvent) {
 		return
 	}
 	logger.Warnf("[Outbox] 事件发送失败，等待重试: id=%s attempt=%d err=%v", event.ID, event.Attempts+1, err)
+}
+
+func (p *outboxPublisher) cleanupSent() {
+	before := time.Now().UTC().Add(-p.cfg.SentRetention)
+	ctx, cancel := context.WithTimeout(context.Background(), p.cfg.PublishTimeout)
+	removed, err := p.store.CleanupSentBefore(ctx, before, p.cfg.CleanupBatchSize)
+	cancel()
+	if err != nil {
+		logger.Warnf("[Outbox] 清理已发送事件失败: %v", err)
+		return
+	}
+	if removed > 0 {
+		logger.Debugf("[Outbox] 清理已发送事件: removed=%d", removed)
+	}
 }
 
 func (p *outboxPublisher) nextBackoff(attempt int) time.Duration {
@@ -215,11 +248,27 @@ func withDefaultOutboxConfig(cfg OutboxPublisherConfig) OutboxPublisherConfig {
 	if cfg.MaxRetries <= 0 {
 		cfg.MaxRetries = 6
 	}
+	if cfg.MaxDeliveryAttempts <= 0 {
+		if cfg.MaxRetries > 0 {
+			cfg.MaxDeliveryAttempts = cfg.MaxRetries
+		} else {
+			cfg.MaxDeliveryAttempts = 6
+		}
+	}
 	if cfg.RetryBackoff <= 0 {
 		cfg.RetryBackoff = 200 * time.Millisecond
 	}
 	if cfg.MaxRetryBackoff <= 0 {
 		cfg.MaxRetryBackoff = 30 * time.Second
+	}
+	if cfg.CleanupInterval <= 0 {
+		cfg.CleanupInterval = 10 * time.Minute
+	}
+	if cfg.SentRetention <= 0 {
+		cfg.SentRetention = 7 * 24 * time.Hour
+	}
+	if cfg.CleanupBatchSize <= 0 {
+		cfg.CleanupBatchSize = 1000
 	}
 	if cfg.ShutdownTimeout <= 0 {
 		cfg.ShutdownTimeout = 5 * time.Second

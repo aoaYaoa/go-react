@@ -52,4 +52,10 @@ func TestMetricsEndpoint(t *testing.T) {
 	if !strings.Contains(w.Body.String(), "# HELP http_requests_total") {
 		t.Fatalf("expected metrics help text, got:\n%s", w.Body.String())
 	}
+	if !strings.Contains(w.Body.String(), "# HELP go_goroutines") {
+		t.Fatalf("expected runtime metrics, got:\n%s", w.Body.String())
+	}
+	if !strings.Contains(w.Body.String(), "# HELP process_uptime_seconds") {
+		t.Fatalf("expected uptime metrics, got:\n%s", w.Body.String())
+	}
 }

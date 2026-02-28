@@ -34,6 +34,7 @@ func (r *Router) SetupRoutes(engine *gin.Engine) {
 	// 构建全局中间件列表
 	globalMiddlewares := []gin.HandlerFunc{
 		middlewares.RequestID(),                        // 1. 生成请求ID
+		middlewares.TraceID(),                          // 2. 生成/透传 TraceID
 		middlewares.Metrics(),                          // 2. 指标采集
 		middlewares.Logger(),                           // 2. 记录日志
 		middlewares.Recovery(),                         // 3. 错误恢复

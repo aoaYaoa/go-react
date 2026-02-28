@@ -46,3 +46,12 @@
 1. `event_outbox` 中 `pending` 数量是否持续增长
 2. `/health` 是否长期出现 `degraded`
 3. `/metrics` 中请求时延与错误比例变化
+
+## 7. 增量更新（4/5 项）
+
+- Outbox 增强：
+  - 新增 `failed` 终态，避免无限重试
+  - 新增已发送事件定期清理能力（按保留时间与批次）
+- 可观测性增强：
+  - `/metrics` 增加运行时指标（goroutine、内存、uptime）
+  - 新增 `X-Trace-ID` 中间件，支持链路标识透传与自动生成
