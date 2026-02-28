@@ -1,57 +1,111 @@
 # 后端架构
 
-本项目遵循 **整洁架构 (Clean Architecture)** 原则和 **Go 标准项目布局 (Standard Go Project Layout)**。
+本文档描述当前后端（`backend/`）的实际运行架构与关键链路。
 
-## 架构分层
+## 1. 分层结构
 
-### 1. 处理器层 / Handler Layer (`internal/handlers`)
-- **职责**: 处理 HTTP 请求，解析输入，验证参数，并格式化响应。
-- **依赖**: 依赖于 `Service Layer`。
-- **输入/输出**: 接收 `*gin.Context`，通过 `pkg/utils/response` 返回 JSON 响应。
-- **DTOs**: 使用 `internal/dto` 进行请求绑定和响应格式化。
+项目采用分层设计：
 
-### 2. 服务层 / Service Layer (`internal/services`)
-- **职责**: 包含业务逻辑。独立于 HTTP 或数据库细节。
-- **依赖**: 依赖于 `Repository Layer`。
-- **上下文**: 传递 `context.Context` 以进行取消和超时控制。
+- `internal/handlers`：HTTP 处理层，负责参数绑定、调用 Service、组装响应
+- `internal/services`：业务层，负责业务规则和跨仓储逻辑
+- `internal/repositories`：数据访问层，负责数据库 CRUD
+- `internal/models`：GORM 模型定义
+- `internal/container`：依赖装配（Repository/Service/Handler/Router）
 
-### 3. 仓储层 / Repository Layer (`internal/repositories`)
-- **职责**: 处理数据访问和持久化。
-- **依赖**: 依赖于 `GORM` 或数据库驱动。
-- **上下文**: 所有数据库操作均使用 `WithContext(ctx)`。
+请求路径：
 
-### 4. 模型层 / Model Layer (`internal/models`)
-- **职责**: 定义数据库模式和实体结构。
+`Client -> Router -> Middleware -> Handler -> Service -> Repository -> DB`
 
-## 依赖注入
+## 2. 中间件管道（当前顺序）
 
-我们使用 **容器** 模式 (`internal/container`) 来管理依赖关系。
+全局中间件在 `internal/routes/routes.go` 注册，顺序如下：
 
-- `NewContainer(dbManager)` 初始化所有的 Repositories, Services 和 Handlers。
-- 这确保了松耦合，并使测试变得更容易。
+1. `RequestID`：设置 `X-Request-ID`
+2. `Metrics`：采集请求计数、时延、并发数
+3. `Logger`：请求日志
+4. `Recovery`：panic 恢复
+5. `CORS`
+6. `Security`
+7. `NoCache`
+8. `ContentType`
+9. `RateLimit`
+10. `IPAccess`（按配置可选）
+11. `Compression`
+12. `Decryption` + `Signature` + `Encryption`（`ENABLE_SIGNATURE=true` 时启用）
 
-## 中间件管道
+## 3. 认证与安全
 
-请求流经以下中间件：
+- JWT：使用 `JWT_SECRET` 初始化默认签名密钥
+- 签名加解密：
+  - 开启条件：`ENABLE_SIGNATURE=true`
+  - 必填：`ENCRYPTION_AES_KEY`（长度必须是 16/24/32 字节）
+  - 未配置或长度非法时，服务启动直接失败
 
-1.  **Logger**: 记录请求 ID、方法、路径、延迟（支持每日轮转和彩色控制台输出）。
-2.  **Recovery**: 从 panic 中恢复并返回 500 内部服务器错误。
-3.  **CORS**: 处理跨域资源共享。
-4.  **Security**: 添加安全头 (XSS, HSTS 等)。
-5.  **RequestID**: 生成或传递 `X-Request-ID`。
-6.  **IPAccess** (可选): 检查 IP 白名单/黑名单。
-7.  **Signature** (可选): 验证 HMAC 请求签名。
-8.  **Auth** (可选): 验证受保护路由的 JWT 令牌。
+## 4. 缓存与消息链路
 
-## 错误处理
+### 4.1 Redis（验证码）
 
-- **统一响应**: 所有 API 返回标准结构：
-    ```json
-    {
-      "code": 200,
-      "message": "成功",
-      "data": { ... },
-      "requestId": "..."
-    }
-    ```
-- **优雅关闭**: 服务器处理 `SIGINT` 和 `SIGTERM` 信号，在关闭前完成活动请求。
+- 验证码存储优先使用 Redis（`REDIS_*`）
+- Redis 不可用时自动回退内存存储
+- 健康检查会标记 Redis 组件状态（`up/down/disabled`）
+
+### 4.2 Kafka（登录事件）
+
+登录成功后会发布 `user.login` 事件，链路如下：
+
+`UserService -> OutboxPublisher -> AsyncPublisher -> KafkaPublisher`
+
+- `OutboxPublisher`：先写 DB 表 `event_outbox`（持久化）
+- `AsyncPublisher`：后台 worker 异步重试，避免阻塞登录主链路
+- `KafkaPublisher`：最终投递到 Kafka topic
+
+优势：
+
+- 进程重启后，`event_outbox` 未发送事件仍可继续补发
+- 临时网络抖动由异步重试吸收
+
+## 5. 健康检查与可观测性
+
+### 5.1 健康检查
+
+- `GET /health`
+- `GET /api/health`
+
+返回包含组件状态：
+
+- `database`
+- `redis`
+- `kafka`
+
+当任一启用组件异常时，接口返回 `503`。
+
+### 5.2 指标
+
+- `GET /metrics`
+- Prometheus 文本格式
+- 当前指标：
+  - `http_requests_total`
+  - `http_request_duration_seconds_sum/count`
+  - `http_inflight_requests`
+
+## 6. 启动流程（关键步骤）
+
+`cmd/server/main.go` 启动顺序要点：
+
+1. 加载配置
+2. 初始化日志
+3. 初始化 JWT 默认密钥
+4. 校验签名加密配置（可选）
+5. 初始化验证码存储（Redis/内存）
+6. 初始化数据库
+7. 初始化 Kafka 发布器（含 Async + Outbox）
+8. 组装容器并启动路由
+
+## 7. CI 回归
+
+仓库已配置 GitHub Actions 工作流：`.github/workflows/ci.yml`
+
+- 后端：`go test ./...`
+- 前端：`npm ci && npm run build`
+
+用于保证提交与 PR 的基础回归质量。
