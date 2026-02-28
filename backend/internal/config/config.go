@@ -32,6 +32,14 @@ type Config struct {
 	RedisTLS       bool
 	RedisKeyPrefix string
 
+	// Kafka 配置
+	KafkaBrokers          string
+	KafkaTopic            string
+	KafkaSecurityProtocol string
+	KafkaSSLCAFile        string
+	KafkaSSLCertFile      string
+	KafkaSSLKeyFile       string
+
 	// JWT配置
 	JWTSecret string
 
@@ -83,6 +91,14 @@ func LoadConfig() *Config {
 		RedisTLS:       getEnvAsBool("REDIS_TLS", false),
 		RedisKeyPrefix: getEnv("REDIS_KEY_PREFIX", "captcha:"),
 
+		// Kafka 配置
+		KafkaBrokers:          getEnv("KAFKA_BROKERS", ""),
+		KafkaTopic:            getEnv("KAFKA_TOPIC", ""),
+		KafkaSecurityProtocol: strings.ToUpper(getEnv("KAFKA_SECURITY_PROTOCOL", "SSL")),
+		KafkaSSLCAFile:        getEnv("KAFKA_SSL_CA_FILE", ""),
+		KafkaSSLCertFile:      getEnv("KAFKA_SSL_CERT_FILE", ""),
+		KafkaSSLKeyFile:       getEnv("KAFKA_SSL_KEY_FILE", ""),
+
 		// JWT配置
 		JWTSecret: getEnv("JWT_SECRET", "your-secret-key-change-in-production"),
 
@@ -109,6 +125,12 @@ func Init() {
 		log.Printf("  - Redis: disabled")
 	} else {
 		log.Printf("  - Redis: %s (db=%d, tls=%v)", AppConfig.RedisAddr, AppConfig.RedisDB, AppConfig.RedisTLS)
+	}
+	if AppConfig.KafkaBrokers == "" || AppConfig.KafkaTopic == "" {
+		log.Printf("  - Kafka: disabled")
+	} else {
+		log.Printf("  - Kafka: %s topic=%s protocol=%s",
+			AppConfig.KafkaBrokers, AppConfig.KafkaTopic, AppConfig.KafkaSecurityProtocol)
 	}
 	log.Printf("  - 签名验证: %v", AppConfig.EnableSignature)
 	log.Printf("  - IP白名单: %v (启用: %v)", AppConfig.IPWhitelist, AppConfig.EnableIPWhitelist)

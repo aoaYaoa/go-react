@@ -4,12 +4,14 @@ import (
 	"backend/internal/config"
 	"backend/internal/container"
 	"backend/internal/database"
+	"backend/internal/messaging"
 	"backend/pkg/utils/captcha"
 	"backend/pkg/utils/logger"
 	"context"
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -68,6 +70,33 @@ func main() {
 	}
 	defer dbManager.Close() // 确保程序退出时关闭数据库连接
 
+	// 初始化 Kafka 发布器（失败回退 noop，不影响核心业务）
+	publisher := messaging.NewNoopPublisher()
+	if config.AppConfig.KafkaBrokers != "" && config.AppConfig.KafkaTopic != "" {
+		brokers := splitCSV(config.AppConfig.KafkaBrokers)
+		kafkaPublisher, kafkaErr := messaging.NewKafkaPublisher(messaging.KafkaConfig{
+			Brokers:      brokers,
+			Topic:        config.AppConfig.KafkaTopic,
+			CAFile:       config.AppConfig.KafkaSSLCAFile,
+			CertFile:     config.AppConfig.KafkaSSLCertFile,
+			KeyFile:      config.AppConfig.KafkaSSLKeyFile,
+			RequireTLS:   strings.EqualFold(config.AppConfig.KafkaSecurityProtocol, "SSL"),
+			WriteTimeout: 5 * time.Second,
+		})
+		if kafkaErr != nil {
+			logger.Warnf("Kafka 初始化失败，将禁用事件发布: %v", kafkaErr)
+		} else {
+			publisher = kafkaPublisher
+			defer func() {
+				if err := publisher.Close(); err != nil {
+					logger.Warnf("关闭 Kafka 发布器失败: %v", err)
+				}
+			}()
+			logger.Infof("Kafka 事件发布已启用: brokers=%s topic=%s",
+				config.AppConfig.KafkaBrokers, config.AppConfig.KafkaTopic)
+		}
+	}
+
 	// 执行数据库迁移（自动创建表结构）
 	// 注释掉自动迁移以加快启动速度，需要迁移时手动运行 scripts/migrate.sh
 	// if err := dbManager.Migrate(); err != nil {
@@ -76,7 +105,7 @@ func main() {
 	// }
 
 	// 初始化依赖容器
-	appContainer, err := container.InitializeContainer(dbManager)
+	appContainer, err := container.InitializeContainer(dbManager, publisher)
 	if err != nil {
 		logger.Errorf("依赖注入容器初始化失败: %v", err)
 		panic(err)
@@ -124,4 +153,16 @@ func main() {
 	}
 
 	logger.Info("服务器已退出")
+}
+
+func splitCSV(v string) []string {
+	items := strings.Split(v, ",")
+	result := make([]string, 0, len(items))
+	for _, item := range items {
+		item = strings.TrimSpace(item)
+		if item != "" {
+			result = append(result, item)
+		}
+	}
+	return result
 }

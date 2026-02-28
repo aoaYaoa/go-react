@@ -2,12 +2,14 @@ package services
 
 import (
 	"backend/internal/dto"
+	"backend/internal/messaging"
 	"backend/internal/models"
 	"backend/internal/repositories"
 	"backend/pkg/utils/crypto"
 	"backend/pkg/utils/jwt"
 	"backend/pkg/utils/logger"
 	"context"
+	"encoding/json"
 	"errors"
 	"time"
 
@@ -24,15 +26,20 @@ type UserService interface {
 
 // userService 用户服务实现
 type userService struct {
-	repo     repositories.UserRepository
-	menuRepo repositories.MenuRepository
+	repo      repositories.UserRepository
+	menuRepo  repositories.MenuRepository
+	publisher messaging.EventPublisher
 }
 
 // NewUserService 创建用户服务实例
-func NewUserService(repo repositories.UserRepository, menuRepo repositories.MenuRepository) UserService {
+func NewUserService(repo repositories.UserRepository, menuRepo repositories.MenuRepository, publisher messaging.EventPublisher) UserService {
+	if publisher == nil {
+		publisher = messaging.NewNoopPublisher()
+	}
 	return &userService{
-		repo:     repo,
-		menuRepo: menuRepo,
+		repo:      repo,
+		menuRepo:  menuRepo,
+		publisher: publisher,
 	}
 }
 
@@ -147,7 +154,7 @@ func (s *userService) Login(ctx context.Context, req *dto.LoginRequest) (*dto.Lo
 	logger.Infof("[UserService] 用户登录成功: id=%s, username=%s, roles=%d, menus=%d",
 		user.ID.String(), user.Username, len(roles), len(menuResponses))
 
-	return &dto.LoginResponse{
+	result := &dto.LoginResponse{
 		User: dto.RegisterResponse{
 			ID:       user.ID,
 			Username: user.Username,
@@ -159,7 +166,19 @@ func (s *userService) Login(ctx context.Context, req *dto.LoginRequest) (*dto.Lo
 		ExpiresIn: 86400, // 24 小时（秒）
 		Roles:     roles,
 		Menus:     menuResponses,
-	}, nil
+	}
+
+	// 发布登录事件（不影响主流程）
+	eventPayload, marshalErr := buildUserLoginEventPayload(user)
+	if marshalErr != nil {
+		logger.Warnf("[UserService] 构造登录事件失败: %v", marshalErr)
+	} else {
+		if err := s.publisher.Publish(ctx, user.ID.String(), eventPayload); err != nil {
+			logger.Warnf("[UserService] 发布登录事件失败: %v", err)
+		}
+	}
+
+	return result, nil
 }
 
 // GetByID 根据 ID 获取用户
@@ -170,4 +189,15 @@ func (s *userService) GetByID(ctx context.Context, id uuid.UUID) (*models.User, 
 // List 列出所有用户
 func (s *userService) List(ctx context.Context) ([]*models.User, error) {
 	return s.repo.List(ctx)
+}
+
+func buildUserLoginEventPayload(user *models.User) ([]byte, error) {
+	event := map[string]any{
+		"event":       "user.login",
+		"user_id":     user.ID.String(),
+		"username":    user.Username,
+		"role":        user.Role,
+		"occurred_at": time.Now().UTC().Format(time.RFC3339),
+	}
+	return json.Marshal(event)
 }

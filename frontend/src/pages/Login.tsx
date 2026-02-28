@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { userService } from '../services/user'
 import { useStore } from '../store'
+import ParticlesBackground from '../components/ParticlesBackground'
 import styles from './Login.module.css'
 
 /**

@@ -4,6 +4,7 @@ import { UserOutlined, LockOutlined, MailOutlined } from '@ant-design/icons'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { userService } from '../services/user'
+import ParticlesBackground from '../components/ParticlesBackground'
 import styles from './Register.module.css'
 
 /**

@@ -3,6 +3,7 @@ package container
 import (
 	"backend/internal/database"
 	"backend/internal/handlers"
+	"backend/internal/messaging"
 	"backend/internal/repositories"
 	"backend/internal/routes"
 	"backend/internal/services"
@@ -28,12 +29,12 @@ type servicesHolder struct {
 
 // InitializeContainer 初始化容器
 // 采用分层初始化的方式，避免主函数过于臃肿
-func InitializeContainer(manager *database.Manager) (*Container, error) {
+func InitializeContainer(manager *database.Manager, publisher messaging.EventPublisher) (*Container, error) {
 	// 1. 初始化 Repositories
 	repos := initRepositories(manager)
 
 	// 2. 初始化 Services
-	svcs := initServices(repos)
+	svcs := initServices(repos, publisher)
 
 	// 3. 初始化 Handlers
 	h := initHandlers(svcs)
@@ -56,10 +57,10 @@ func initRepositories(manager *database.Manager) *repositoriesHolder {
 }
 
 // initServices 初始化所有 Service
-func initServices(repos *repositoriesHolder) *servicesHolder {
+func initServices(repos *repositoriesHolder, publisher messaging.EventPublisher) *servicesHolder {
 	return &servicesHolder{
 		Task:   services.NewTaskService(repos.Task),
-		User:   services.NewUserService(repos.User, repos.Menu),
+		User:   services.NewUserService(repos.User, repos.Menu, publisher),
 		Health: services.NewHealthService(),
 	}
 }
