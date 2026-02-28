@@ -66,13 +66,43 @@ jobs:
         run: |
           mkdir -p ~/.ssh
           chmod 700 ~/.ssh
-          printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/id_ed25519
+          printf '%s\n' "$VPS_SSH_KEY" | tr -d '\r' > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
+          ssh-keygen -y -f ~/.ssh/id_ed25519 >/dev/null
           PORT="${VPS_PORT:-22}"
+          if ! [[ "$PORT" =~ ^[0-9]+$ ]]; then
+            echo "Invalid VPS_PORT='$PORT', fallback to 22"
+            PORT=22
+          fi
           ssh-keyscan -p "$PORT" -H "$VPS_HOST" >> ~/.ssh/known_hosts
+
+      - name: Verify SSH Login
+        run: |
+          PORT="${VPS_PORT:-22}"
+          if ! [[ "$PORT" =~ ^[0-9]+$ ]]; then
+            PORT=22
+          fi
+          ssh -i ~/.ssh/id_ed25519 -p "$PORT" -o BatchMode=yes -o StrictHostKeyChecking=yes -o ConnectTimeout=15 "$VPS_USER@$VPS_HOST" \
+            "echo 'SSH login OK as:' && whoami"
 
       - name: Trigger Remote Deploy
         run: |
           PORT="${VPS_PORT:-22}"
-          ssh -i ~/.ssh/id_ed25519 -p "$PORT" -o StrictHostKeyChecking=yes "$VPS_USER@$VPS_HOST" \
-            "sudo systemctl start go-react-boot-update.service && sudo journalctl -u go-react-boot-update.service -n 120 --no-pager && curl -fsS http://127.0.0.1:8080/api/health >/dev/null"
+          if ! [[ "$PORT" =~ ^[0-9]+$ ]]; then
+            PORT=22
+          fi
+          ssh -i ~/.ssh/id_ed25519 -p "$PORT" -o BatchMode=yes -o StrictHostKeyChecking=yes -o ConnectTimeout=15 "$VPS_USER@$VPS_HOST" \
+            "set -euo pipefail
+             SUDO=''
+             if [ \"\$(id -u)\" -ne 0 ]; then
+               if sudo -n true 2>/dev/null; then
+                 SUDO='sudo -n'
+               else
+                 echo 'Deploy failed: current user cannot run sudo without password.'
+                 echo 'Fix: grant NOPASSWD for systemctl/journalctl or use VPS_USER=root.'
+                 exit 1
+               fi
+             fi
+             \${SUDO} systemctl start go-react-boot-update.service
+             \${SUDO} journalctl -u go-react-boot-update.service -n 120 --no-pager
+             curl -fsS --retry 10 --retry-delay 2 http://127.0.0.1:8080/api/health >/dev/null"
