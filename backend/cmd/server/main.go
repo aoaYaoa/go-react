@@ -4,6 +4,7 @@ import (
 	"backend/internal/config"
 	"backend/internal/container"
 	"backend/internal/database"
+	"backend/pkg/utils/captcha"
 	"backend/pkg/utils/logger"
 	"context"
 	"net/http"
@@ -42,6 +43,16 @@ func main() {
 
 	// 初始化日志
 	logger.Init()
+
+	// 初始化验证码存储（优先 Redis，失败自动回退内存）
+	captcha.InitStoreWithConfig(captcha.StoreConfig{
+		Addr:      config.AppConfig.RedisAddr,
+		Username:  config.AppConfig.RedisUsername,
+		Password:  config.AppConfig.RedisPassword,
+		DB:        config.AppConfig.RedisDB,
+		UseTLS:    config.AppConfig.RedisTLS,
+		KeyPrefix: config.AppConfig.RedisKeyPrefix,
+	})
 
 	// 设置 Gin 模式
 	gin.SetMode(config.AppConfig.ServerMode)

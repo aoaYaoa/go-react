@@ -24,6 +24,14 @@ type Config struct {
 	DatabaseUser string
 	DatabasePass string
 
+	// Redis 配置（用于验证码等缓存）
+	RedisAddr      string
+	RedisUsername  string
+	RedisPassword  string
+	RedisDB        int
+	RedisTLS       bool
+	RedisKeyPrefix string
+
 	// JWT配置
 	JWTSecret string
 
@@ -67,6 +75,14 @@ func LoadConfig() *Config {
 		DatabaseUser: getEnv("DATABASE_USER", "root"),
 		DatabasePass: getEnv("DATABASE_PASS", ""),
 
+		// Redis 配置
+		RedisAddr:      getEnv("REDIS_ADDR", ""),
+		RedisUsername:  getEnv("REDIS_USERNAME", ""),
+		RedisPassword:  getEnv("REDIS_PASSWORD", ""),
+		RedisDB:        getEnvAsInt("REDIS_DB", 0),
+		RedisTLS:       getEnvAsBool("REDIS_TLS", false),
+		RedisKeyPrefix: getEnv("REDIS_KEY_PREFIX", "captcha:"),
+
 		// JWT配置
 		JWTSecret: getEnv("JWT_SECRET", "your-secret-key-change-in-production"),
 
@@ -89,6 +105,11 @@ func Init() {
 	log.Printf("  - Port: %s", AppConfig.ServerPort)
 	log.Printf("  - Mode: %s", AppConfig.ServerMode)
 	log.Printf("  - Database: %s@%s:%d/%s", AppConfig.DatabaseType, AppConfig.DatabaseHost, AppConfig.DatabasePort, AppConfig.DatabaseName)
+	if AppConfig.RedisAddr == "" {
+		log.Printf("  - Redis: disabled")
+	} else {
+		log.Printf("  - Redis: %s (db=%d, tls=%v)", AppConfig.RedisAddr, AppConfig.RedisDB, AppConfig.RedisTLS)
+	}
 	log.Printf("  - 签名验证: %v", AppConfig.EnableSignature)
 	log.Printf("  - IP白名单: %v (启用: %v)", AppConfig.IPWhitelist, AppConfig.EnableIPWhitelist)
 	log.Printf("  - IP黑名单: %v (启用: %v)", AppConfig.IPBlacklist, AppConfig.EnableIPBlacklist)
