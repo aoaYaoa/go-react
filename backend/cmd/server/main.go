@@ -49,7 +49,10 @@ func main() {
 	logger.Init()
 
 	// 初始化 JWT 默认密钥（供登录与鉴权统一使用）
-	jwt.SetDefaultSecret(config.AppConfig.JWTSecret)
+	if err := jwt.SetDefaultSecret(config.AppConfig.JWTSecret); err != nil {
+		logger.Errorf("JWT 配置无效: %v", err)
+		panic(err)
+	}
 
 	// 启用签名校验时，强制要求配置有效 AES 密钥。
 	if config.AppConfig.EnableSignature {

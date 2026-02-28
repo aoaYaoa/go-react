@@ -2,10 +2,6 @@ package jwt
 
 import (
 	"backend/pkg/utils/logger"
-	"crypto/hmac"
-	"crypto/sha256"
-	"encoding/base64"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -14,6 +10,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	jwtv5 "github.com/golang-jwt/jwt/v5"
 )
 
 const (
@@ -23,28 +20,31 @@ const (
 	// BearerPrefix Bearer 前缀
 	BearerPrefix = "Bearer "
 
-	// 默认签名密钥（从环境变量读取）
-	defaultSecret = "your-jwt-secret-key-change-me"
-
 	// 默认过期时间
 	defaultExpDuration = 24 * time.Hour
 
 	// Issuer 签发者
 	Issuer = "go-gin-backend"
+
+	minSecretLength = 32
 )
+
+var weakSecretPlaceholders = map[string]struct{}{
+	"your-secret-key-change-in-production": {},
+	"your-jwt-secret-key-change-me":        {},
+}
 
 var (
 	secretMu      sync.RWMutex
-	configuredKey = defaultSecret
+	configuredKey string
 )
 
 // Claims JWT 声明（Payload）
 type Claims struct {
-	UserID    string `json:"user_id"` // 使用 string 存储 UUID
-	Username  string `json:"username"`
-	Role      string `json:"role"`
-	IssuedAt  int64  `json:"iat"`
-	ExpiresAt int64  `json:"exp"`
+	UserID   string `json:"user_id"` // 使用 string 存储 UUID
+	Username string `json:"username"`
+	Role     string `json:"role"`
+	jwtv5.RegisteredClaims
 }
 
 // TokenResponse Token 响应结构
@@ -55,69 +55,37 @@ type TokenResponse struct {
 }
 
 // GenerateToken 生成 JWT Token
-//
-// 简化的 JWT 实现（Base64 编码 Header 和 Payload，HMAC 签名）
-// 生产环境建议使用 github.com/golang-jwt/jwt 库
-//
-// 参数:
-//   - userID: 用户 ID (UUID string)
-//   - username: 用户名
-//   - role: 用户角色
-//   - secret: 签名密钥（可选，默认使用 defaultSecret）
-//   - duration: 过期时间（可选，默认 24 小时）
-//
-// 返回: Token 字符串和错误信息
 func GenerateToken(userID string, username string, role string, secret string, duration time.Duration) (string, error) {
-	// 使用默认密钥
-	secret = resolveSecret(secret)
+	resolvedSecret, err := resolveSecret(secret)
+	if err != nil {
+		return "", err
+	}
 
-	// 使用默认过期时间
 	if duration == 0 {
 		duration = defaultExpDuration
 	}
 
-	// 获取当前时间
-	now := time.Now()
-
-	// 构建声明
+	now := time.Now().UTC()
 	claims := Claims{
-		UserID:    userID,
-		Username:  username,
-		Role:      role,
-		IssuedAt:  now.Unix(),
-		ExpiresAt: now.Add(duration).Unix(),
+		UserID:   userID,
+		Username: username,
+		Role:     role,
+		RegisteredClaims: jwtv5.RegisteredClaims{
+			Issuer:    Issuer,
+			IssuedAt:  jwtv5.NewNumericDate(now),
+			NotBefore: jwtv5.NewNumericDate(now.Add(-1 * time.Second)),
+			ExpiresAt: jwtv5.NewNumericDate(now.Add(duration)),
+		},
 	}
 
-	// 构建 Header
-	header := map[string]string{
-		"alg": "HS256",
-		"typ": "JWT",
-	}
-
-	// 编码 Header
-	headerJSON, err := json.Marshal(header)
+	token := jwtv5.NewWithClaims(jwtv5.SigningMethodHS256, claims)
+	signed, err := token.SignedString([]byte(resolvedSecret))
 	if err != nil {
-		return "", fmt.Errorf("编码 Header 失败: %w", err)
+		return "", fmt.Errorf("生成 JWT 失败: %w", err)
 	}
-	encodedHeader := base64.URLEncoding.EncodeToString(headerJSON)
-
-	// 编码 Payload
-	claimsJSON, err := json.Marshal(claims)
-	if err != nil {
-		return "", fmt.Errorf("编码 Payload 失败: %w", err)
-	}
-	encodedPayload := base64.URLEncoding.EncodeToString(claimsJSON)
-
-	// 生成签名
-	signatureInput := encodedHeader + "." + encodedPayload
-	signature := generateSignature(signatureInput, secret)
-
-	// 构建 Token
-	token := signatureInput + "." + signature
 
 	logger.Debugf("[JWT] 生成 Token: user_id=%s, username=%s", userID, username)
-
-	return token, nil
+	return signed, nil
 }
 
 // GenerateTokenResponse 生成完整的 Token 响应
@@ -127,7 +95,6 @@ func GenerateTokenResponse(userID string, username string, role string, secret s
 		return nil, err
 	}
 
-	// 计算过期时间（秒）
 	var expiresIn int64
 	if duration == 0 {
 		expiresIn = int64(defaultExpDuration / time.Second)
@@ -143,122 +110,88 @@ func GenerateTokenResponse(userID string, username string, role string, secret s
 }
 
 // ValidateToken 验证 JWT Token
-//
-// 参数:
-//   - token: Token 字符串
-//   - secret: 签名密钥（可选，默认使用 defaultSecret）
-//
-// 返回: 声明信息和错误信息
 func ValidateToken(token string, secret string) (*Claims, error) {
-	// 使用默认密钥
-	secret = resolveSecret(secret)
-
-	// 分割 Token
-	parts := strings.Split(token, ".")
-	if len(parts) != 3 {
-		return nil, errors.New("无效的 Token 格式")
-	}
-
-	encodedHeader := parts[0]
-	encodedPayload := parts[1]
-	signature := parts[2]
-
-	// 验证签名
-	signatureInput := encodedHeader + "." + encodedPayload
-	expectedSignature := generateSignature(signatureInput, secret)
-	if signature != expectedSignature {
-		logger.Warnf("[JWT] 签名验证失败")
-		return nil, errors.New("Token 签名验证失败")
-	}
-
-	// 解码 Header
-	_, err := base64.URLEncoding.DecodeString(encodedHeader)
+	resolvedSecret, err := resolveSecret(secret)
 	if err != nil {
-		return nil, fmt.Errorf("解码 Header 失败: %w", err)
+		return nil, err
 	}
 
-	// 解码 Payload
-	payloadBytes, err := base64.URLEncoding.DecodeString(encodedPayload)
+	claims := &Claims{}
+	parsedToken, err := jwtv5.ParseWithClaims(token, claims, func(t *jwtv5.Token) (any, error) {
+		return []byte(resolvedSecret), nil
+	}, jwtv5.WithIssuer(Issuer), jwtv5.WithValidMethods([]string{jwtv5.SigningMethodHS256.Alg()}))
 	if err != nil {
-		return nil, fmt.Errorf("解码 Payload 失败: %w", err)
+		logger.Warnf("[JWT] 令牌验证失败: %v", err)
+		return nil, errors.New("无效的认证令牌")
 	}
-
-	// 解析 Claims
-	var claims Claims
-	if err := json.Unmarshal(payloadBytes, &claims); err != nil {
-		return nil, fmt.Errorf("解析 Claims 失败: %w", err)
+	if !parsedToken.Valid {
+		return nil, errors.New("无效的认证令牌")
 	}
-
-	// 验证过期时间
-	now := time.Now().Unix()
-	if claims.ExpiresAt < now {
-		logger.Warnf("[JWT] Token 已过期: exp=%d, now=%d", claims.ExpiresAt, now)
-		return nil, errors.New("Token 已过期")
+	if claims.UserID == "" {
+		return nil, errors.New("无效的认证令牌")
 	}
-
-	// 验证签发者
-	// if claims.Issuer != Issuer {
-	//     return "", errors.New("无效的 Token 签发者")
-	// }
 
 	logger.Debugf("[JWT] Token 验证成功: user_id=%s, username=%s", claims.UserID, claims.Username)
-
-	return &claims, nil
+	return claims, nil
 }
 
 // SetDefaultSecret 设置默认 JWT 密钥。
-// 当传入空字符串时，会回退到内置默认值。
-func SetDefaultSecret(secret string) {
-	secretMu.Lock()
-	defer secretMu.Unlock()
-
+func SetDefaultSecret(secret string) error {
 	secret = strings.TrimSpace(secret)
-	if secret == "" {
-		configuredKey = defaultSecret
-		return
+	if err := ValidateSecret(secret); err != nil {
+		return err
 	}
+
+	secretMu.Lock()
 	configuredKey = secret
+	secretMu.Unlock()
+	return nil
 }
 
-func resolveSecret(secret string) string {
-	if strings.TrimSpace(secret) != "" {
-		return secret
+// ValidateSecret 校验 JWT 密钥强度。
+func ValidateSecret(secret string) error {
+	secret = strings.TrimSpace(secret)
+	if secret == "" {
+		return errors.New("JWT_SECRET 不能为空")
+	}
+	if _, isWeakPlaceholder := weakSecretPlaceholders[secret]; isWeakPlaceholder {
+		return errors.New("JWT_SECRET 不能使用默认占位值")
+	}
+	if len(secret) < minSecretLength {
+		return fmt.Errorf("JWT_SECRET 长度不能小于 %d", minSecretLength)
+	}
+	return nil
+}
+
+func resolveSecret(secret string) (string, error) {
+	secret = strings.TrimSpace(secret)
+	if secret != "" {
+		if err := ValidateSecret(secret); err != nil {
+			return "", err
+		}
+		return secret, nil
 	}
 
 	secretMu.RLock()
-	defer secretMu.RUnlock()
-	if configuredKey == "" {
-		return defaultSecret
+	configured := configuredKey
+	secretMu.RUnlock()
+	if err := ValidateSecret(configured); err != nil {
+		return "", err
 	}
-	return configuredKey
-}
-
-// generateSignature 生成 HMAC-SHA256 签名
-func generateSignature(input string, secret string) string {
-	h := hmac.New(sha256.New, []byte(secret))
-	h.Write([]byte(input))
-	signature := h.Sum(nil)
-	return base64.URLEncoding.EncodeToString(signature)
+	return configured, nil
 }
 
 // ExtractToken 从请求中提取 Token
-//
-// 参数:
-//   - c: Gin 上下文
-//
-// 返回: Token 字符串和错误信息
 func ExtractToken(c *gin.Context) (string, error) {
 	authHeader := c.GetHeader(TokenHeader)
 	if authHeader == "" {
 		return "", errors.New("未提供认证令牌")
 	}
 
-	// 检查 Bearer 前缀
 	if !strings.HasPrefix(authHeader, BearerPrefix) {
 		return "", errors.New("无效的认证令牌格式")
 	}
 
-	// 提取 Token
 	token := strings.TrimPrefix(authHeader, BearerPrefix)
 	if token == "" {
 		return "", errors.New("认证令牌不能为空")
@@ -268,34 +201,23 @@ func ExtractToken(c *gin.Context) (string, error) {
 }
 
 // GetUserID 从请求中获取用户 ID
-//
-// 从 Token 中提取用户 ID
-//
-// 参数:
-//   - c: Gin 上下文
-//
-// 返回: 用户 ID (UUID string) 和错误信息
 func GetUserID(c *gin.Context) (string, error) {
-	// 从 Context 中获取（如果已由中间件设置）
 	if userID, exists := c.Get("user_id"); exists {
 		if uid, ok := userID.(string); ok {
 			return uid, nil
 		}
 	}
 
-	// 从 Token 中提取
 	token, err := ExtractToken(c)
 	if err != nil {
 		return "", err
 	}
 
-	// 验证 Token
 	claims, err := ValidateToken(token, "")
 	if err != nil {
 		return "", err
 	}
 
-	// 将用户信息存储到 Context 中
 	c.Set("user_id", claims.UserID)
 	c.Set("username", claims.Username)
 	c.Set("role", claims.Role)
@@ -304,25 +226,17 @@ func GetUserID(c *gin.Context) (string, error) {
 }
 
 // GetClaims 从请求中获取完整的声明信息
-//
-// 参数:
-//   - c: Gin 上下文
-//
-// 返回: 声明信息和错误信息
 func GetClaims(c *gin.Context) (*Claims, error) {
-	// 从 Token 中提取
 	token, err := ExtractToken(c)
 	if err != nil {
 		return nil, err
 	}
 
-	// 验证 Token
 	claims, err := ValidateToken(token, "")
 	if err != nil {
 		return nil, err
 	}
 
-	// 将用户信息存储到 Context 中
 	c.Set("user_id", claims.UserID)
 	c.Set("username", claims.Username)
 	c.Set("role", claims.Role)
@@ -331,11 +245,6 @@ func GetClaims(c *gin.Context) (*Claims, error) {
 }
 
 // SetTokenCookie 将 Token 设置到 Cookie
-//
-// 参数:
-//   - c: Gin 上下文
-//   - token: Token 字符串
-//   - maxAge: 最大年龄（秒）
 func SetTokenCookie(c *gin.Context, token string, maxAge int) {
 	c.SetSameSite(http.SameSiteStrictMode)
 	c.SetCookie(

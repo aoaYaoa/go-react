@@ -4,6 +4,7 @@ import (
 	"backend/internal/dto"
 	"backend/internal/models"
 	"backend/pkg/utils/crypto"
+	"backend/pkg/utils/jwt"
 	"backend/pkg/utils/logger"
 	"context"
 	"encoding/json"
@@ -25,6 +26,7 @@ var loggerInitOnce sync.Once
 func ensureLoggerInitialized() {
 	loggerInitOnce.Do(func() {
 		logger.Init()
+		_ = jwt.SetDefaultSecret("test-jwt-secret-key-abcdefghijklmnopqrstuvwxyz")
 	})
 }
 

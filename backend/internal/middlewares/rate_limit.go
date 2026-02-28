@@ -9,22 +9,47 @@ import (
 	"golang.org/x/time/rate"
 )
 
+const (
+	defaultLimiterEntryTTL      = 30 * time.Minute
+	defaultLimiterCleanupWindow = 5 * time.Minute
+)
+
+type limiterEntry struct {
+	limiter  *rate.Limiter
+	lastSeen time.Time
+}
+
 // IPRateLimiter IP 限流器
 type IPRateLimiter struct {
-	limiters map[string]*rate.Limiter
+	limiters map[string]*limiterEntry
 	mu       sync.Mutex
 	r        rate.Limit
 	b        int
+
+	now             func() time.Time
+	entryTTL        time.Duration
+	cleanupInterval time.Duration
+	lastCleanupAt   time.Time
 }
 
 // NewIPRateLimiter 创建 IP 限流器
-// r: 每秒允许的请求数
-// b: 桶的大小（突发流量）
 func NewIPRateLimiter(r rate.Limit, b int) *IPRateLimiter {
+	return NewIPRateLimiterWithClock(r, b, time.Now)
+}
+
+// NewIPRateLimiterWithClock 允许测试注入时钟。
+func NewIPRateLimiterWithClock(r rate.Limit, b int, now func() time.Time) *IPRateLimiter {
+	if now == nil {
+		now = time.Now
+	}
 	return &IPRateLimiter{
-		limiters: make(map[string]*rate.Limiter),
-		r:        r,
-		b:        b,
+		limiters:        make(map[string]*limiterEntry),
+		r:               r,
+		b:               b,
+		now:             now,
+		entryTTL:        defaultLimiterEntryTTL,
+		cleanupInterval: defaultLimiterCleanupWindow,
+		lastCleanupAt:   now(),
 	}
 }
 
@@ -33,26 +58,38 @@ func (i *IPRateLimiter) GetLimiter(ip string) *rate.Limiter {
 	i.mu.Lock()
 	defer i.mu.Unlock()
 
-	limiter, exists := i.limiters[ip]
-	if !exists {
-		limiter = rate.NewLimiter(i.r, i.b)
-		i.limiters[ip] = limiter
+	now := i.now()
+	if now.Sub(i.lastCleanupAt) >= i.cleanupInterval {
+		removed := i.cleanupExpired(now)
+		if removed > 0 {
+			logger.Debugf("[RateLimit] 已清理过期 IP 限流器: %d", removed)
+		}
+		i.lastCleanupAt = now
 	}
 
-	return limiter
+	entry, exists := i.limiters[ip]
+	if !exists {
+		entry = &limiterEntry{
+			limiter:  rate.NewLimiter(i.r, i.b),
+			lastSeen: now,
+		}
+		i.limiters[ip] = entry
+	} else {
+		entry.lastSeen = now
+	}
+
+	return entry.limiter
 }
 
 // RateLimit 请求限流中间件
-// defaultRate: 每秒允许的请求数（默认 10）
-// defaultBurst: 桶的大小（默认 20）
 func RateLimit(defaultRate float64, defaultBurst int) gin.HandlerFunc {
 	limiter := NewIPRateLimiter(rate.Limit(defaultRate), defaultBurst)
 
 	return func(c *gin.Context) {
 		ip := c.ClientIP()
-		limiter := limiter.GetLimiter(ip)
+		ipLimiter := limiter.GetLimiter(ip)
 
-		if !limiter.Allow() {
+		if !ipLimiter.Allow() {
 			logger.Warnf("[RateLimit] IP: %s 超过速率限制", ip)
 			c.JSON(429, gin.H{
 				"success": false,
@@ -66,17 +103,33 @@ func RateLimit(defaultRate float64, defaultBurst int) gin.HandlerFunc {
 	}
 }
 
-// CleanupExpiredLimiters 清理过期的限流器
-// 应该在一个单独的 goroutine 中定期调用
+// CleanupExpiredLimiters 定期清理过期限流器。
 func (i *IPRateLimiter) CleanupExpiredLimiters(interval time.Duration) {
+	if interval <= 0 {
+		interval = i.cleanupInterval
+	}
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
 
 	for range ticker.C {
 		i.mu.Lock()
-		// 清理长时间未使用的限流器
-		// 这里可以添加更复杂的清理逻辑
-		logger.Debug("执行限流器清理")
+		removed := i.cleanupExpired(i.now())
+		i.lastCleanupAt = i.now()
 		i.mu.Unlock()
+
+		if removed > 0 {
+			logger.Debugf("[RateLimit] 定时清理过期 IP 限流器: %d", removed)
+		}
 	}
+}
+
+func (i *IPRateLimiter) cleanupExpired(now time.Time) int {
+	removed := 0
+	for ip, entry := range i.limiters {
+		if now.Sub(entry.lastSeen) > i.entryTTL {
+			delete(i.limiters, ip)
+			removed++
+		}
+	}
+	return removed
 }
