@@ -6,6 +6,7 @@ import (
 	"backend/internal/database"
 	"backend/internal/messaging"
 	"backend/pkg/utils/captcha"
+	"backend/pkg/utils/jwt"
 	"backend/pkg/utils/logger"
 	"context"
 	"net/http"
@@ -45,6 +46,9 @@ func main() {
 
 	// 初始化日志
 	logger.Init()
+
+	// 初始化 JWT 默认密钥（供登录与鉴权统一使用）
+	jwt.SetDefaultSecret(config.AppConfig.JWTSecret)
 
 	// 初始化验证码存储（优先 Redis，失败自动回退内存）
 	captcha.InitStoreWithConfig(captcha.StoreConfig{

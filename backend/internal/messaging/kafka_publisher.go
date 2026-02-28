@@ -25,7 +25,10 @@ type KafkaConfig struct {
 }
 
 type kafkaPublisher struct {
-	writer *kafka.Writer
+	writer  *kafka.Writer
+	dialer  *kafka.Dialer
+	brokers []string
+	topic   string
 }
 
 // NewKafkaPublisher 创建 Kafka 发布器。
@@ -37,12 +40,17 @@ func NewKafkaPublisher(cfg KafkaConfig) (EventPublisher, error) {
 		return nil, errors.New("kafka topic is empty")
 	}
 
-	transport := &kafka.Transport{}
+	var tlsConfig *tls.Config
 	if cfg.RequireTLS {
-		tlsConfig, err := loadTLSConfig(cfg.CAFile, cfg.CertFile, cfg.KeyFile)
+		var err error
+		tlsConfig, err = loadTLSConfig(cfg.CAFile, cfg.CertFile, cfg.KeyFile)
 		if err != nil {
 			return nil, err
 		}
+	}
+
+	transport := &kafka.Transport{}
+	if tlsConfig != nil {
 		transport.TLS = tlsConfig
 	}
 
@@ -60,7 +68,17 @@ func NewKafkaPublisher(cfg KafkaConfig) (EventPublisher, error) {
 		WriteTimeout: timeout,
 	}
 
-	return &kafkaPublisher{writer: writer}, nil
+	dialer := &kafka.Dialer{Timeout: timeout}
+	if tlsConfig != nil {
+		dialer.TLS = tlsConfig
+	}
+
+	return &kafkaPublisher{
+		writer:  writer,
+		dialer:  dialer,
+		brokers: append([]string(nil), cfg.Brokers...),
+		topic:   cfg.Topic,
+	}, nil
 }
 
 func (p *kafkaPublisher) Publish(ctx context.Context, key string, payload []byte) error {
@@ -78,6 +96,30 @@ func (p *kafkaPublisher) Publish(ctx context.Context, key string, payload []byte
 
 func (p *kafkaPublisher) Close() error {
 	return p.writer.Close()
+}
+
+func (p *kafkaPublisher) HealthCheck(ctx context.Context) error {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	if len(p.brokers) == 0 {
+		return errors.New("kafka broker is empty")
+	}
+
+	checkCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	conn, err := p.dialer.DialContext(checkCtx, "tcp", p.brokers[0])
+	if err != nil {
+		return fmt.Errorf("dial kafka broker failed: %w", err)
+	}
+	defer conn.Close()
+
+	if _, err := conn.ReadPartitions(p.topic); err != nil {
+		return fmt.Errorf("read kafka partitions failed: %w", err)
+	}
+
+	return nil
 }
 
 func loadTLSConfig(caFile, certFile, keyFile string) (*tls.Config, error) {

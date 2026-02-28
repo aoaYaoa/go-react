@@ -4,6 +4,7 @@ import (
 	"backend/internal/services"
 	"backend/pkg/utils/logger"
 	"backend/pkg/utils/response"
+	"net/http"
 
 	"github.com/gin-gonic/gin"
 )
@@ -27,6 +28,16 @@ func NewHealthHandler(service services.HealthService) HealthHandler {
 func (h *healthHandler) Check(c *gin.Context) {
 	logger.Info("执行健康检查请求")
 	healthData := h.service.CheckHealth(c.Request.Context())
+
+	if status, ok := healthData["status"].(string); ok && status != "ok" {
+		c.JSON(http.StatusServiceUnavailable, response.Response{
+			Success: false,
+			Code:    http.StatusServiceUnavailable,
+			Error:   "service not ready",
+			Data:    healthData,
+		})
+		return
+	}
 
 	response.Success(c, healthData)
 }

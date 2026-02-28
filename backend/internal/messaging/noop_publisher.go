@@ -13,6 +13,10 @@ func (n *noopPublisher) Publish(ctx context.Context, key string, payload []byte)
 	return nil
 }
 
+func (n *noopPublisher) HealthCheck(ctx context.Context) error {
+	return ErrPublisherDisabled
+}
+
 func (n *noopPublisher) Close() error {
 	return nil
 }

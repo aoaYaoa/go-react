@@ -42,6 +42,7 @@ type DatabaseConfig struct {
 	Database string       // 数据库名
 	Username string       // 用户名
 	Password string       // 密码
+	SSLMode  string       // PostgreSQL SSL 模式
 }
 
 // NewDatabase 根据配置创建数据库连接

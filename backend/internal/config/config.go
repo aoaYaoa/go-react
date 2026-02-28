@@ -17,12 +17,13 @@ type Config struct {
 	CORSOrigins []string
 
 	// 数据库配置
-	DatabaseType string
-	DatabaseHost string
-	DatabasePort int
-	DatabaseName string
-	DatabaseUser string
-	DatabasePass string
+	DatabaseType    string
+	DatabaseHost    string
+	DatabasePort    int
+	DatabaseName    string
+	DatabaseUser    string
+	DatabasePass    string
+	DatabaseSSLMode string
 
 	// Redis 配置（用于验证码等缓存）
 	RedisAddr      string
@@ -76,12 +77,13 @@ func LoadConfig() *Config {
 		CORSOrigins: corsOrigins,
 
 		// 数据库配置
-		DatabaseType: getEnv("DATABASE_TYPE", "mysql"),
-		DatabaseHost: getEnv("DATABASE_HOST", "localhost"),
-		DatabasePort: getEnvAsInt("DATABASE_PORT", 3306),
-		DatabaseName: getEnv("DATABASE_NAME", "appdb"),
-		DatabaseUser: getEnv("DATABASE_USER", "root"),
-		DatabasePass: getEnv("DATABASE_PASS", ""),
+		DatabaseType:    getEnv("DATABASE_TYPE", "mysql"),
+		DatabaseHost:    getEnv("DATABASE_HOST", "localhost"),
+		DatabasePort:    getEnvAsInt("DATABASE_PORT", 3306),
+		DatabaseName:    getEnv("DATABASE_NAME", "appdb"),
+		DatabaseUser:    getEnv("DATABASE_USER", "root"),
+		DatabasePass:    getEnv("DATABASE_PASS", ""),
+		DatabaseSSLMode: strings.ToLower(getEnv("DATABASE_SSL_MODE", "disable")),
 
 		// Redis 配置
 		RedisAddr:      getEnv("REDIS_ADDR", ""),
@@ -121,6 +123,7 @@ func Init() {
 	log.Printf("  - Port: %s", AppConfig.ServerPort)
 	log.Printf("  - Mode: %s", AppConfig.ServerMode)
 	log.Printf("  - Database: %s@%s:%d/%s", AppConfig.DatabaseType, AppConfig.DatabaseHost, AppConfig.DatabasePort, AppConfig.DatabaseName)
+	log.Printf("  - Database SSLMode: %s", AppConfig.DatabaseSSLMode)
 	if AppConfig.RedisAddr == "" {
 		log.Printf("  - Redis: disabled")
 	} else {

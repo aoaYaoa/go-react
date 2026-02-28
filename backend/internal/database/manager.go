@@ -4,6 +4,7 @@ import (
 	"backend/internal/config"
 	"backend/internal/models"
 	"backend/pkg/utils/logger"
+	"context"
 	"fmt"
 
 	"gorm.io/gorm"
@@ -26,6 +27,7 @@ func NewManager(cfg *config.Config) (*Manager, error) {
 		Database: cfg.DatabaseName,
 		Username: cfg.DatabaseUser,
 		Password: cfg.DatabasePass,
+		SSLMode:  cfg.DatabaseSSLMode,
 	}
 
 	// 根据类型创建数据库连接
@@ -111,4 +113,27 @@ func (m *Manager) GetDatabaseType() DatabaseType {
 // IsMySQL 判断是否为MySQL数据库
 func (m *Manager) IsMySQL() bool {
 	return m.GetDatabaseType() == MySQL
+}
+
+// Ping 测试数据库连接状态（用于健康检查）。
+func (m *Manager) Ping(ctx context.Context) error {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
+	db := m.db.GetDB()
+	if db == nil {
+		return fmt.Errorf("database instance is nil")
+	}
+
+	sqlDB, err := db.WithContext(ctx).DB()
+	if err != nil {
+		return fmt.Errorf("get sql db failed: %w", err)
+	}
+
+	if err := sqlDB.PingContext(ctx); err != nil {
+		return fmt.Errorf("ping db failed: %w", err)
+	}
+
+	return nil
 }

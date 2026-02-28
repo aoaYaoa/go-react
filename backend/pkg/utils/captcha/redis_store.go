@@ -111,6 +111,10 @@ func (s *redisStore) ping(ctx context.Context) error {
 	return nil
 }
 
+func (s *redisStore) HealthCheck(ctx context.Context) error {
+	return s.ping(ctx)
+}
+
 type redisResp struct {
 	str   string
 	isNil bool

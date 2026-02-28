@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -30,6 +31,11 @@ const (
 
 	// Issuer 签发者
 	Issuer = "go-gin-backend"
+)
+
+var (
+	secretMu      sync.RWMutex
+	configuredKey = defaultSecret
 )
 
 // Claims JWT 声明（Payload）
@@ -63,9 +69,7 @@ type TokenResponse struct {
 // 返回: Token 字符串和错误信息
 func GenerateToken(userID string, username string, role string, secret string, duration time.Duration) (string, error) {
 	// 使用默认密钥
-	if secret == "" {
-		secret = defaultSecret
-	}
+	secret = resolveSecret(secret)
 
 	// 使用默认过期时间
 	if duration == 0 {
@@ -147,9 +151,7 @@ func GenerateTokenResponse(userID string, username string, role string, secret s
 // 返回: 声明信息和错误信息
 func ValidateToken(token string, secret string) (*Claims, error) {
 	// 使用默认密钥
-	if secret == "" {
-		secret = defaultSecret
-	}
+	secret = resolveSecret(secret)
 
 	// 分割 Token
 	parts := strings.Split(token, ".")
@@ -202,6 +204,33 @@ func ValidateToken(token string, secret string) (*Claims, error) {
 	logger.Debugf("[JWT] Token 验证成功: user_id=%s, username=%s", claims.UserID, claims.Username)
 
 	return &claims, nil
+}
+
+// SetDefaultSecret 设置默认 JWT 密钥。
+// 当传入空字符串时，会回退到内置默认值。
+func SetDefaultSecret(secret string) {
+	secretMu.Lock()
+	defer secretMu.Unlock()
+
+	secret = strings.TrimSpace(secret)
+	if secret == "" {
+		configuredKey = defaultSecret
+		return
+	}
+	configuredKey = secret
+}
+
+func resolveSecret(secret string) string {
+	if strings.TrimSpace(secret) != "" {
+		return secret
+	}
+
+	secretMu.RLock()
+	defer secretMu.RUnlock()
+	if configuredKey == "" {
+		return defaultSecret
+	}
+	return configuredKey
 }
 
 // generateSignature 生成 HMAC-SHA256 签名

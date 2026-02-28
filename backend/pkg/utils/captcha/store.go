@@ -1,6 +1,8 @@
 package captcha
 
 import (
+	"context"
+	"errors"
 	"sync"
 	"time"
 
@@ -91,6 +93,33 @@ func (s *memoryStore) cleanExpired() {
 
 // 全局验证码存储实例
 var globalStore CaptchaStore
+
+// StoreType 返回当前验证码存储类型：redis / memory / uninitialized。
+func StoreType() string {
+	switch globalStore.(type) {
+	case *redisStore:
+		return "redis"
+	case *memoryStore:
+		return "memory"
+	default:
+		return "uninitialized"
+	}
+}
+
+// CheckStoreHealth 检查当前验证码存储健康状态。
+func CheckStoreHealth(ctx context.Context) error {
+	if globalStore == nil {
+		return errors.New("captcha store is not initialized")
+	}
+
+	if checker, ok := globalStore.(interface {
+		HealthCheck(context.Context) error
+	}); ok {
+		return checker.HealthCheck(ctx)
+	}
+
+	return nil
+}
 
 // InitStore 初始化全局存储
 func InitStore() {

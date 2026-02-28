@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	"gorm.io/driver/postgres"
@@ -50,16 +51,8 @@ func NewPostgreSQLDatabase(config *DatabaseConfig) (*PostgreSQLDatabase, error) 
 
 // Connect 连接PostgreSQL数据库
 func (d *PostgreSQLDatabase) Connect() (*gorm.DB, error) {
-	// 构建DSN连接字符串
-	// Supabase 连接配置：sslmode=disable 跳过 SSL 验证
-	dsn := fmt.Sprintf(
-		"host=%s user=%s password=%s dbname=%s port=%d sslmode=disable TimeZone=Asia/Shanghai",
-		d.config.Host,
-		d.config.Username,
-		d.config.Password,
-		d.config.Database,
-		d.config.Port,
-	)
+	// 构建 DSN 连接字符串，sslmode 支持从配置传入。
+	dsn := buildPostgresDSN(d.config)
 
 	// 使用GORM连接PostgreSQL
 	db, err := gorm.Open(postgres.Open(dsn), GormConfig())
@@ -83,6 +76,23 @@ func (d *PostgreSQLDatabase) Connect() (*gorm.DB, error) {
 	log.Printf("PostgreSQL数据库连接成功: %s@%s:%d/%s (Supabase)", d.config.Username, d.config.Host, d.config.Port, d.config.Database)
 
 	return db, nil
+}
+
+func buildPostgresDSN(cfg *DatabaseConfig) string {
+	sslMode := strings.TrimSpace(cfg.SSLMode)
+	if sslMode == "" {
+		sslMode = "disable"
+	}
+
+	return fmt.Sprintf(
+		"host=%s user=%s password=%s dbname=%s port=%d sslmode=%s TimeZone=Asia/Shanghai",
+		cfg.Host,
+		cfg.Username,
+		cfg.Password,
+		cfg.Database,
+		cfg.Port,
+		sslMode,
+	)
 }
 
 // Close 关闭数据库连接

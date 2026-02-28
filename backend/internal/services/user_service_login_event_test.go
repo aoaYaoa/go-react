@@ -110,6 +110,11 @@ func (m *mockPublisher) Publish(ctx context.Context, key string, payload []byte)
 	return args.Error(0)
 }
 
+func (m *mockPublisher) HealthCheck(ctx context.Context) error {
+	args := m.Called(ctx)
+	return args.Error(0)
+}
+
 func (m *mockPublisher) Close() error {
 	args := m.Called()
 	return args.Error(0)
