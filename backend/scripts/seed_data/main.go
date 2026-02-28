@@ -429,7 +429,7 @@ func seedDrones(db *gorm.DB, now time.Time, operatorIDs []uuid.UUID) {
 	}
 
 	if len(operatorIDs) == 0 {
-		fmt.Println("  没有运营商数据，跳过\n")
+		fmt.Println("  没有运营商数据，跳过")
 		return
 	}
 

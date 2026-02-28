@@ -45,8 +45,9 @@ type Config struct {
 	JWTSecret string
 
 	// 签名配置
-	SignatureSecret string
-	EnableSignature bool
+	SignatureSecret  string
+	EnableSignature  bool
+	EncryptionAESKey string
 
 	// IP访问控制配置
 	EnableIPWhitelist bool
@@ -105,8 +106,9 @@ func LoadConfig() *Config {
 		JWTSecret: getEnv("JWT_SECRET", "your-secret-key-change-in-production"),
 
 		// 签名配置
-		SignatureSecret: getEnv("SIGNATURE_SECRET", "your-api-signing-secret-change-me"),
-		EnableSignature: getEnvAsBool("ENABLE_SIGNATURE", false),
+		SignatureSecret:  getEnv("SIGNATURE_SECRET", "your-api-signing-secret-change-me"),
+		EnableSignature:  getEnvAsBool("ENABLE_SIGNATURE", false),
+		EncryptionAESKey: getEnv("ENCRYPTION_AES_KEY", ""),
 
 		// IP访问控制配置
 		EnableIPWhitelist: getEnvAsBool("ENABLE_IP_WHITELIST", false),
@@ -136,6 +138,9 @@ func Init() {
 			AppConfig.KafkaBrokers, AppConfig.KafkaTopic, AppConfig.KafkaSecurityProtocol)
 	}
 	log.Printf("  - 签名验证: %v", AppConfig.EnableSignature)
+	if AppConfig.EnableSignature {
+		log.Printf("  - AES 密钥已配置: %v", strings.TrimSpace(AppConfig.EncryptionAESKey) != "")
+	}
 	log.Printf("  - IP白名单: %v (启用: %v)", AppConfig.IPWhitelist, AppConfig.EnableIPWhitelist)
 	log.Printf("  - IP黑名单: %v (启用: %v)", AppConfig.IPBlacklist, AppConfig.EnableIPBlacklist)
 }

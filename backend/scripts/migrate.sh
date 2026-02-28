@@ -21,7 +21,7 @@ fi
 echo "🚀 运行迁移脚本..."
 echo ""
 
-go run scripts/migrate.go
+go run ./scripts/migrate
 
 exit_code=$?
 

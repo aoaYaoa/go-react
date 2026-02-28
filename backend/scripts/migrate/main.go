@@ -26,7 +26,7 @@ func main() {
 	fmt.Printf("📋 数据库配置:\n")
 	fmt.Printf("   类型: %s\n", cfg.DatabaseType)
 	fmt.Printf("   主机: %s\n", cfg.DatabaseHost)
-	fmt.Printf("   端口: %s\n", cfg.DatabasePort)
+	fmt.Printf("   端口: %d\n", cfg.DatabasePort)
 	fmt.Printf("   数据库: %s\n", cfg.DatabaseName)
 	fmt.Printf("   用户: %s\n", cfg.DatabaseUser)
 	fmt.Println()

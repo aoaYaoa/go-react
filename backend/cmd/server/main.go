@@ -5,6 +5,7 @@ import (
 	"backend/internal/container"
 	"backend/internal/database"
 	"backend/internal/messaging"
+	"backend/internal/middlewares"
 	"backend/pkg/utils/captcha"
 	"backend/pkg/utils/jwt"
 	"backend/pkg/utils/logger"
@@ -50,6 +51,14 @@ func main() {
 	// 初始化 JWT 默认密钥（供登录与鉴权统一使用）
 	jwt.SetDefaultSecret(config.AppConfig.JWTSecret)
 
+	// 启用签名校验时，强制要求配置有效 AES 密钥。
+	if config.AppConfig.EnableSignature {
+		if err := middlewares.SetEncryptionKey(config.AppConfig.EncryptionAESKey); err != nil {
+			logger.Errorf("签名/加密配置无效: %v", err)
+			panic(err)
+		}
+	}
+
 	// 初始化验证码存储（优先 Redis，失败自动回退内存）
 	captcha.InitStoreWithConfig(captcha.StoreConfig{
 		Addr:      config.AppConfig.RedisAddr,
@@ -90,13 +99,20 @@ func main() {
 		if kafkaErr != nil {
 			logger.Warnf("Kafka 初始化失败，将禁用事件发布: %v", kafkaErr)
 		} else {
-			publisher = kafkaPublisher
+			publisher = messaging.NewAsyncPublisher(kafkaPublisher, messaging.AsyncPublisherConfig{
+				QueueSize:       512,
+				WorkerCount:     2,
+				PublishTimeout:  2 * time.Second,
+				MaxRetries:      2,
+				RetryBackoff:    150 * time.Millisecond,
+				ShutdownTimeout: 3 * time.Second,
+			})
 			defer func() {
 				if err := publisher.Close(); err != nil {
 					logger.Warnf("关闭 Kafka 发布器失败: %v", err)
 				}
 			}()
-			logger.Infof("Kafka 事件发布已启用: brokers=%s topic=%s",
+			logger.Infof("Kafka 事件发布已启用(异步重试): brokers=%s topic=%s",
 				config.AppConfig.KafkaBrokers, config.AppConfig.KafkaTopic)
 		}
 	}

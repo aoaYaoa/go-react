@@ -21,7 +21,7 @@ fi
 echo "🚀 运行数据填充脚本..."
 echo ""
 
-go run scripts/seed_data.go
+go run ./scripts/seed_data
 
 exit_code=$?
 

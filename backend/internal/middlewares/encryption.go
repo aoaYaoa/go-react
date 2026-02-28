@@ -6,8 +6,10 @@ import (
 	"backend/pkg/utils/response"
 	"bytes"
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -15,19 +17,15 @@ import (
 )
 
 const (
-	// AES 默认密钥（从配置获取）
-	// TODO: 从环境变量读取
-	defaultAESKey = "1234567890123456" // 16 字节
-
-	// AES 默认 IV
-	defaultAESIV = "abcdefghijklmnop" // 16 字节
-
 	// 加密数据标识字段
 	encryptedField = "encrypted"
 	dataField      = "data"
 )
 
 var (
+	encryptionKey string
+	keyMutex      sync.RWMutex
+
 	// 加密接口列表（支持通配符）
 	encryptedEndpoints = []string{
 		// "/api/tasks",
@@ -45,6 +43,40 @@ var (
 	decryptedCache = make(map[string]bool)
 	cacheMutex     sync.RWMutex
 )
+
+// SetEncryptionKey 设置 AES 密钥（要求 16/24/32 字节）。
+func SetEncryptionKey(key string) error {
+	key = strings.TrimSpace(key)
+	if err := validateAESKey(key); err != nil {
+		return err
+	}
+
+	keyMutex.Lock()
+	encryptionKey = key
+	keyMutex.Unlock()
+	return nil
+}
+
+func getEncryptionKey() (string, error) {
+	keyMutex.RLock()
+	defer keyMutex.RUnlock()
+
+	if err := validateAESKey(encryptionKey); err != nil {
+		return "", err
+	}
+	return encryptionKey, nil
+}
+
+func validateAESKey(key string) error {
+	switch len(key) {
+	case 16, 24, 32:
+		return nil
+	case 0:
+		return errors.New("ENCRYPTION_AES_KEY is required when signature/encryption is enabled")
+	default:
+		return errors.New("ENCRYPTION_AES_KEY length must be 16, 24, or 32 bytes")
+	}
+}
 
 // DecryptionMiddleware 请求解密中间件
 //
@@ -110,8 +142,16 @@ func DecryptionMiddleware() gin.HandlerFunc {
 			return
 		}
 
+		aesKey, err := getEncryptionKey()
+		if err != nil {
+			logger.Errorf("[Decryption] AES 密钥不可用: %v", err)
+			response.Error(c, "服务加密配置错误", http.StatusInternalServerError)
+			c.Abort()
+			return
+		}
+
 		// 解密数据
-		decryptedStr, err := crypto.AESDecryptString(defaultAESKey, encryptedData)
+		decryptedStr, err := crypto.AESDecryptString(aesKey, encryptedData)
 		if err != nil {
 			logger.Errorf("[Decryption] 解密失败: %v", err)
 			response.Error(c, "数据解密失败", http.StatusBadRequest)
@@ -195,8 +235,14 @@ func EncryptionMiddleware() gin.HandlerFunc {
 			return
 		}
 
+		aesKey, err := getEncryptionKey()
+		if err != nil {
+			logger.Errorf("[Encryption] AES 密钥不可用: %v", err)
+			return
+		}
+
 		// 加密数据
-		encryptedData, err := crypto.AESEncryptString(defaultAESKey, string(jsonStr))
+		encryptedData, err := crypto.AESEncryptString(aesKey, string(jsonStr))
 		if err != nil {
 			logger.Errorf("[Encryption] 加密失败: %v", err)
 			return
@@ -219,7 +265,7 @@ func EncryptionMiddleware() gin.HandlerFunc {
 
 		// 写入加密响应
 		c.Header("Content-Type", "application/json; charset=utf-8")
-		c.Header("Content-Length", string(rune(len(encryptedJSON))))
+		c.Header("Content-Length", strconv.Itoa(len(encryptedJSON)))
 		c.Status(writer.status)
 		c.Writer.Write(encryptedJSON)
 	}
@@ -228,10 +274,9 @@ func EncryptionMiddleware() gin.HandlerFunc {
 // shouldDecryptRequest 检查请求是否需要解密
 func shouldDecryptRequest(path string) bool {
 	cacheMutex.RLock()
-	defer cacheMutex.RUnlock()
-
-	// 检查缓存
-	if cached, ok := encryptedCache[path]; ok {
+	cached, ok := encryptedCache[path]
+	cacheMutex.RUnlock()
+	if ok {
 		return cached
 	}
 
@@ -249,10 +294,9 @@ func shouldDecryptRequest(path string) bool {
 // shouldEncryptResponse 检查响应是否需要加密
 func shouldEncryptResponse(path string) bool {
 	cacheMutex.RLock()
-	defer cacheMutex.RUnlock()
-
-	// 检查缓存
-	if cached, ok := decryptedCache[path]; ok {
+	cached, ok := decryptedCache[path]
+	cacheMutex.RUnlock()
+	if ok {
 		return cached
 	}
 
@@ -307,9 +351,4 @@ func (w *responseWriter) Write(b []byte) (int, error) {
 func (w *responseWriter) WriteHeader(statusCode int) {
 	w.status = statusCode
 	w.ResponseWriter.WriteHeader(statusCode)
-}
-
-// 字符串转换函数（解决 bytes.BufferString 的不兼容问题）
-func bytesBufferToString(b *bytes.Buffer) string {
-	return b.String()
 }
