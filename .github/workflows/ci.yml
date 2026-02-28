@@ -112,29 +112,45 @@ jobs:
               exit 1
             fi
           fi
-          PORT="${VPS_PORT:-22}"
+          HOST="$(printf '%s' "$VPS_HOST" | tr -d '[:space:]')"
+          USER_INPUT="$(printf '%s' "$VPS_USER" | tr -d '[:space:]')"
+          PORT="$(printf '%s' "${VPS_PORT:-22}" | tr -d '[:space:]')"
           if ! [[ "$PORT" =~ ^[0-9]+$ ]]; then
             echo "Invalid VPS_PORT='$PORT', fallback to 22"
             PORT=22
           fi
-          ssh-keyscan -p "$PORT" -H "$VPS_HOST" >> ~/.ssh/known_hosts
+          echo "DEPLOY_HOST=$HOST" >> "$GITHUB_ENV"
+          echo "DEPLOY_PORT=$PORT" >> "$GITHUB_ENV"
+          echo "DEPLOY_USER_INPUT=$USER_INPUT" >> "$GITHUB_ENV"
+          ssh-keyscan -p "$PORT" -H "$HOST" >> ~/.ssh/known_hosts
 
       - name: Verify SSH Login
         run: |
-          PORT="${VPS_PORT:-22}"
-          if ! [[ "$PORT" =~ ^[0-9]+$ ]]; then
-            PORT=22
+          CANDIDATES=("$DEPLOY_USER_INPUT" "ops" "root")
+          SELECTED=""
+          SEEN=""
+          for USER in "${CANDIDATES[@]}"; do
+            [ -n "$USER" ] || continue
+            case " $SEEN " in
+              *" $USER "*) continue ;;
+            esac
+            SEEN="$SEEN $USER"
+            if ssh -i ~/.ssh/id_ed25519 -p "$DEPLOY_PORT" -o BatchMode=yes -o StrictHostKeyChecking=yes -o ConnectTimeout=15 "$USER@$DEPLOY_HOST" \
+              "echo 'SSH login OK as:' && whoami"; then
+              SELECTED="$USER"
+              break
+            fi
+          done
+          if [ -z "$SELECTED" ]; then
+            echo "SSH login failed for users: $SEEN"
+            exit 1
           fi
-          ssh -i ~/.ssh/id_ed25519 -p "$PORT" -o BatchMode=yes -o StrictHostKeyChecking=yes -o ConnectTimeout=15 "$VPS_USER@$VPS_HOST" \
-            "echo 'SSH login OK as:' && whoami"
+          echo "DEPLOY_USER=$SELECTED" >> "$GITHUB_ENV"
+          echo "Selected deploy user: $SELECTED"
 
       - name: Trigger Remote Deploy
         run: |
-          PORT="${VPS_PORT:-22}"
-          if ! [[ "$PORT" =~ ^[0-9]+$ ]]; then
-            PORT=22
-          fi
-          ssh -i ~/.ssh/id_ed25519 -p "$PORT" -o BatchMode=yes -o StrictHostKeyChecking=yes -o ConnectTimeout=15 "$VPS_USER@$VPS_HOST" \
+          ssh -i ~/.ssh/id_ed25519 -p "$DEPLOY_PORT" -o BatchMode=yes -o StrictHostKeyChecking=yes -o ConnectTimeout=15 "$DEPLOY_USER@$DEPLOY_HOST" \
             "set -euo pipefail
              SUDO=''
              if [ \"\$(id -u)\" -ne 0 ]; then
