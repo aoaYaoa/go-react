@@ -1,5 +1,6 @@
 /// 小组件数据模型
 /// 定义主屏幕小组件显示的数据结构
+library;
 
 /// 小组件尺寸
 enum WidgetSize { small, medium, large }
