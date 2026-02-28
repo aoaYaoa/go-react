@@ -86,7 +86,8 @@ jobs:
           fi
 
           if ! ssh-keygen -y -f ~/.ssh/id_ed25519 >/dev/null 2>&1; then
-            if printf '%s' "$KEY_CONTENT" | base64 -d > ~/.ssh/id_ed25519 2>/dev/null && \
+            B64_CLEAN="$(printf '%s' "$KEY_CONTENT" | tr -d '[:space:]' | tr '_-' '/+')"
+            if printf '%s' "$B64_CLEAN" | base64 -d > ~/.ssh/id_ed25519 2>/dev/null && \
                ssh-keygen -y -f ~/.ssh/id_ed25519 >/dev/null 2>&1; then
               echo "VPS_SSH_KEY parsed as base64 private key."
             else
