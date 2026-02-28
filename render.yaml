@@ -1,0 +1,83 @@
+services:
+  - type: web
+    name: go-react-backend
+    runtime: docker
+    plan: free
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    autoDeploy: true
+    healthCheckPath: /health
+    envVars:
+      - key: SERVER_MODE
+        value: release
+      - key: SERVER_PORT
+        value: "10000"
+      - key: DATABASE_TYPE
+        value: postgres
+      - key: DATABASE_HOST
+        sync: false
+      - key: DATABASE_PORT
+        value: "5432"
+      - key: DATABASE_NAME
+        sync: false
+      - key: DATABASE_USER
+        sync: false
+      - key: DATABASE_PASS
+        sync: false
+      - key: DATABASE_SSL_MODE
+        value: require
+      - key: JWT_SECRET
+        generateValue: true
+      - key: CORS_ORIGIN
+        sync: false
+      - key: REDIS_ADDR
+        sync: false
+      - key: REDIS_USERNAME
+        sync: false
+      - key: REDIS_PASSWORD
+        sync: false
+      - key: REDIS_DB
+        value: "0"
+      - key: REDIS_TLS
+        value: "true"
+      - key: REDIS_KEY_PREFIX
+        value: "captcha:"
+      - key: KAFKA_BROKERS
+        sync: false
+      - key: KAFKA_TOPIC
+        sync: false
+      - key: KAFKA_SECURITY_PROTOCOL
+        value: SSL
+      - key: KAFKA_SSL_CA_FILE
+        sync: false
+      - key: KAFKA_SSL_CERT_FILE
+        sync: false
+      - key: KAFKA_SSL_KEY_FILE
+        sync: false
+      - key: ENABLE_SIGNATURE
+        value: "false"
+      - key: SIGNATURE_SECRET
+        generateValue: true
+      - key: ENCRYPTION_AES_KEY
+        sync: false
+
+  - type: web
+    name: go-react-frontend
+    runtime: static
+    plan: free
+    rootDir: frontend
+    buildCommand: npm ci && npm run build
+    staticPublishPath: ./frontend/dist
+    autoDeploy: true
+    envVars:
+      - key: VITE_API_BASE_URL
+        fromService:
+          type: web
+          name: go-react-backend
+          envVarKey: RENDER_EXTERNAL_URL
+      - key: VITE_JWT_SECRET
+        sync: false
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html

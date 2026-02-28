@@ -73,7 +73,7 @@ func LoadConfig() *Config {
 	}
 
 	return &Config{
-		ServerPort:  getEnv("SERVER_PORT", "8080"),
+		ServerPort:  getEnv("SERVER_PORT", getEnv("PORT", "8080")),
 		ServerMode:  getEnv("SERVER_MODE", "debug"),
 		CORSOrigins: corsOrigins,
 
