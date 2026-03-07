@@ -64,6 +64,12 @@ backend/
 cp .env.example .env
 ```
 
+如果使用 Supabase：
+
+- 长期运行的后端在 IPv4 网络下优先使用 `Session pooler`
+- `DATABASE_HOST` 只能填写主机名，不要带 `https://`
+- `DATABASE_USER` 需要使用 `postgres.<project-ref>` 形式
+
 ### 运行
 
 **开发模式 (热重载):**
