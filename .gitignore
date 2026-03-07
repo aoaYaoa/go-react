@@ -65,3 +65,4 @@ tmp/
 
 backend/server
 .kiro
+.codex/
