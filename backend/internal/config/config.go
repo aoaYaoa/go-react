@@ -54,6 +54,15 @@ type Config struct {
 	IPWhitelist       string // 逗号分隔的IP列表
 	EnableIPBlacklist bool
 	IPBlacklist       string // 逗号分隔的IP列表
+
+	// Metrics 访问控制
+	MetricsAllowedIPs string // 逗号分隔，允许访问 /metrics 的 IP，空表示不限制
+
+	// 迁移配置
+	MigrationsPath string // SQL 迁移文件目录，空则跳过迁移
+
+	// 前端地址（根路径跳转目标）
+	FrontendURL string
 }
 
 var AppConfig *Config
@@ -115,6 +124,15 @@ func LoadConfig() *Config {
 		IPWhitelist:       getEnv("IP_WHITELIST", ""),
 		EnableIPBlacklist: getEnvAsBool("ENABLE_IP_BLACKLIST", false),
 		IPBlacklist:       getEnv("IP_BLACKLIST", ""),
+
+		// Metrics 访问控制
+		MetricsAllowedIPs: getEnv("METRICS_ALLOWED_IPS", ""),
+
+		// 迁移配置
+		MigrationsPath: getEnv("MIGRATIONS_PATH", ""),
+
+		// 前端地址
+		FrontendURL: getEnv("FRONTEND_URL", "http://localhost:5173"),
 	}
 }
 

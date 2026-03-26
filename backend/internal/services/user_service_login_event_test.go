@@ -151,7 +151,7 @@ func TestLogin_PublishLoginEvent(t *testing.T) {
 		return event["event"] == "user.login" && event["username"] == "alice"
 	})).Return(nil).Once()
 
-	service := NewUserService(userRepo, menuRepo, publisher)
+	service := NewUserService(userRepo, menuRepo, publisher, nil)
 	resp, loginErr := service.Login(ctx, &dto.LoginRequest{
 		Username: "alice",
 		Password: "secret123",
@@ -187,7 +187,7 @@ func TestLogin_WhenPublishFails_LoginStillSucceeds(t *testing.T) {
 	userRepo.On("FindByUsername", ctx, "bob").Return(user, nil).Once()
 	publisher.On("Publish", ctx, uid.String(), mock.AnythingOfType("[]uint8")).Return(errors.New("kafka write failed")).Once()
 
-	service := NewUserService(userRepo, menuRepo, publisher)
+	service := NewUserService(userRepo, menuRepo, publisher, nil)
 	resp, loginErr := service.Login(ctx, &dto.LoginRequest{
 		Username: "bob",
 		Password: "secret123",

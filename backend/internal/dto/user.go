@@ -62,12 +62,26 @@ type UserResponse struct {
 
 // LoginResponse 登录响应
 type LoginResponse struct {
-	User      RegisterResponse `json:"user"`
-	Token     string           `json:"token"`
-	TokenType string           `json:"token_type"`
-	ExpiresIn int64            `json:"expires_in"`
-	Roles     []RoleResponse   `json:"roles"`
-	Menus     []MenuResponse   `json:"menus"`
+	User         RegisterResponse `json:"user"`
+	Token        string           `json:"token"`
+	RefreshToken string           `json:"refresh_token"`
+	TokenType    string           `json:"token_type"`
+	ExpiresIn    int64            `json:"expires_in"`
+	Roles        []RoleResponse   `json:"roles"`
+	Menus        []MenuResponse   `json:"menus"`
+}
+
+// RefreshRequest 刷新 token 请求
+type RefreshRequest struct {
+	RefreshToken string `json:"refresh_token" binding:"required"`
+}
+
+// RefreshResponse 刷新 token 响应
+type RefreshResponse struct {
+	Token        string `json:"token"`
+	RefreshToken string `json:"refresh_token"`
+	TokenType    string `json:"token_type"`
+	ExpiresIn    int64  `json:"expires_in"`
 }
 
 func ToUserResponse(user *models.User) *UserResponse {

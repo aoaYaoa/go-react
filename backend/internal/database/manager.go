@@ -6,6 +6,7 @@ import (
 	"backend/pkg/utils/logger"
 	"context"
 	"fmt"
+	"strings"
 
 	"gorm.io/gorm"
 )
@@ -108,6 +109,21 @@ func (m *Manager) Close() error {
 // GetDatabaseType 获取当前数据库类型
 func (m *Manager) GetDatabaseType() DatabaseType {
 	return m.db.GetDBType()
+}
+
+// GetMigrateDSN 返回 golang-migrate 所需的 PostgreSQL URL 格式连接字符串。
+// 仅 PostgreSQL 时有效，其他数据库类型返回空字符串。
+func (m *Manager) GetMigrateDSN() string {
+	if pg, ok := m.db.(*PostgreSQLDatabase); ok {
+		cfg := pg.config
+		sslMode := strings.TrimSpace(cfg.SSLMode)
+		if sslMode == "" {
+			sslMode = "disable"
+		}
+		return fmt.Sprintf("postgres://%s:%s@%s:%d/%s?sslmode=%s",
+			cfg.Username, cfg.Password, cfg.Host, cfg.Port, cfg.Database, sslMode)
+	}
+	return ""
 }
 
 // IsMySQL 判断是否为MySQL数据库

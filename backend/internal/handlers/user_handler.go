@@ -17,6 +17,8 @@ import (
 type UserHandler interface {
 	Register(c *gin.Context)
 	Login(c *gin.Context)
+	RefreshToken(c *gin.Context)
+	Logout(c *gin.Context)
 	GetProfile(c *gin.Context)
 	ListUsers(c *gin.Context)
 }
@@ -141,6 +143,55 @@ func (h *userHandler) GetProfile(c *gin.Context) {
 
 	// 返回用户信息（移除密码）
 	response.SuccessWithData(c, "获取成功", dto.ToUserResponse(user))
+}
+
+// RefreshToken 刷新 access token
+// @Summary 刷新 Token
+// @Description 使用 refresh token 换取新的 access token
+// @Tags 用户
+// @Accept json
+// @Produce json
+// @Param request body dto.RefreshRequest true "刷新请求"
+// @Success 200 {object} response.Response{data=dto.RefreshResponse}
+// @Router /api/auth/refresh [post]
+func (h *userHandler) RefreshToken(c *gin.Context) {
+	var req dto.RefreshRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, "请求参数错误", http.StatusBadRequest)
+		return
+	}
+
+	resp, err := h.userService.RefreshToken(c.Request.Context(), &req)
+	if err != nil {
+		logger.Warnf("[UserHandler] 刷新 Token 失败: %v", err)
+		response.Error(c, err.Error(), http.StatusUnauthorized)
+		return
+	}
+
+	response.SuccessWithData(c, "刷新成功", resp)
+}
+
+// Logout 登出
+// @Summary 登出
+// @Description 吊销 refresh token
+// @Tags 用户
+// @Accept json
+// @Produce json
+// @Param request body dto.RefreshRequest true "登出请求"
+// @Success 200 {object} response.Response
+// @Router /api/auth/logout [post]
+func (h *userHandler) Logout(c *gin.Context) {
+	var req dto.RefreshRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, "请求参数错误", http.StatusBadRequest)
+		return
+	}
+
+	if err := h.userService.Logout(c.Request.Context(), req.RefreshToken); err != nil {
+		logger.Warnf("[UserHandler] 登出失败: %v", err)
+	}
+
+	response.Success(c, "已登出")
 }
 
 // ListUsers 列出所有用户（管理员功能）

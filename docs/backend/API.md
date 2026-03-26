@@ -33,7 +33,9 @@
 
 - `GET /api/auth/captcha`：获取验证码图片与 `captcha_id`
 - `POST /api/auth/register`：注册
-- `POST /api/auth/login`：登录（成功后返回 Token）
+- `POST /api/auth/login`：登录（返回 access token 15min + refresh token 7d）
+- `POST /api/auth/refresh`：刷新 access token（token rotation，旧 refresh token 自动吊销）
+- `POST /api/auth/logout`：登出（吊销 refresh token）
 
 ### 用户
 

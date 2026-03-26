@@ -129,8 +129,55 @@ KAFKA_SSL_KEY_FILE=./certs/kafka/service.key
 ## 7. 相关代码位置
 
 - Redis 验证码存储：`backend/pkg/utils/captcha/redis_store.go`
+- Redis Refresh Token 存储：`backend/pkg/utils/jwt/refresh_store.go`
 - Kafka 发布器：`backend/internal/messaging/kafka_publisher.go`
 - 异步发布器：`backend/internal/messaging/async_publisher.go`
 - Outbox 发布器：`backend/internal/messaging/outbox_publisher.go`
 - Outbox 存储（GORM）：`backend/internal/messaging/outbox_gorm_store.go`
 - 启动接入：`backend/cmd/server/main.go`
+
+---
+
+## 8. Redis 业务缓存扩展指南
+
+当前 Redis 接入点：
+
+| 用途 | Key 前缀 | TTL | 实现文件 |
+|------|----------|-----|----------|
+| 图形验证码 | `captcha:` | 5min | `pkg/utils/captcha/redis_store.go` |
+| Refresh Token | `refresh:` | 7d | `pkg/utils/jwt/refresh_store.go` |
+
+两者均使用原生 TCP 协议（无外部 Redis 客户端库），失败时自动回退内存存储。
+
+### 新增业务缓存
+
+推荐模式：**Cache-Aside（旁路缓存）**
+- 读：先读缓存 → miss 读 DB → 回填缓存
+- 写：写 DB → 删除对应缓存 key
+
+Key 命名规范：
+```
+cache:user:profile:{userID}
+cache:user:menus:{userID}
+cache:task:list:{userID}
+```
+
+TTL 建议：
+- 高频且变化慢（用户信息）：`10m ~ 30m`
+- 权限/菜单：`5m ~ 10m`
+- 强一致要求高：`30s ~ 2m` 或不缓存
+
+建议新增目录 `internal/cache/`，定义 `UserCache` 等接口，在 Service 层接入。
+
+### 失效策略优先级
+
+1. 写后删除（推荐，简单可靠）
+2. 写后刷新（读压力大时）
+3. 所有 key 必须设 TTL，无明确需求不驻留
+
+### 排查清单
+
+1. 启动日志是否显示 Redis 已启用
+2. Redis Insight 是否能搜到对应 key
+3. 读接口第二次响应是否明显更快
+4. 写接口后旧 key 是否被删除

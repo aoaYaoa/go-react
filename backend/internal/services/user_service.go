@@ -9,6 +9,8 @@ import (
 	"backend/pkg/utils/jwt"
 	"backend/pkg/utils/logger"
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"time"
@@ -20,26 +22,33 @@ import (
 type UserService interface {
 	Register(ctx context.Context, req *dto.RegisterRequest) (*dto.RegisterResponse, error)
 	Login(ctx context.Context, req *dto.LoginRequest) (*dto.LoginResponse, error)
+	RefreshToken(ctx context.Context, req *dto.RefreshRequest) (*dto.RefreshResponse, error)
+	Logout(ctx context.Context, refreshToken string) error
 	GetByID(ctx context.Context, id uuid.UUID) (*models.User, error)
 	List(ctx context.Context) ([]*models.User, error)
 }
 
 // userService 用户服务实现
 type userService struct {
-	repo      repositories.UserRepository
-	menuRepo  repositories.MenuRepository
-	publisher messaging.EventPublisher
+	repo         repositories.UserRepository
+	menuRepo     repositories.MenuRepository
+	publisher    messaging.EventPublisher
+	refreshStore jwt.RefreshStore
 }
 
 // NewUserService 创建用户服务实例
-func NewUserService(repo repositories.UserRepository, menuRepo repositories.MenuRepository, publisher messaging.EventPublisher) UserService {
+func NewUserService(repo repositories.UserRepository, menuRepo repositories.MenuRepository, publisher messaging.EventPublisher, refreshStore jwt.RefreshStore) UserService {
 	if publisher == nil {
 		publisher = messaging.NewNoopPublisher()
 	}
+	if refreshStore == nil {
+		refreshStore = jwt.NewMemRefreshStore()
+	}
 	return &userService{
-		repo:      repo,
-		menuRepo:  menuRepo,
-		publisher: publisher,
+		repo:         repo,
+		menuRepo:     menuRepo,
+		publisher:    publisher,
+		refreshStore: refreshStore,
 	}
 }
 
@@ -101,10 +110,21 @@ func (s *userService) Login(ctx context.Context, req *dto.LoginRequest) (*dto.Lo
 		return nil, errors.New("用户名或密码错误")
 	}
 
-	// 生成 Token (使用 UUID string)
-	token, err := jwt.GenerateToken(user.ID.String(), user.Username, user.Role, "", 24*time.Hour)
+	// 生成短有效期 access token（15 分钟）
+	token, err := jwt.GenerateToken(user.ID.String(), user.Username, user.Role, "", 15*time.Minute)
 	if err != nil {
 		logger.Errorf("[UserService] 生成 Token 失败: %v", err)
+		return nil, errors.New("登录失败")
+	}
+
+	// 生成 refresh token（7 天，随机字节）
+	refreshToken, err := generateRefreshToken()
+	if err != nil {
+		logger.Errorf("[UserService] 生成 Refresh Token 失败: %v", err)
+		return nil, errors.New("登录失败")
+	}
+	if err := s.refreshStore.Save(ctx, refreshToken, user.ID.String(), 7*24*time.Hour); err != nil {
+		logger.Errorf("[UserService] 保存 Refresh Token 失败: %v", err)
 		return nil, errors.New("登录失败")
 	}
 
@@ -161,11 +181,12 @@ func (s *userService) Login(ctx context.Context, req *dto.LoginRequest) (*dto.Lo
 			Email:    user.Email,
 			Role:     user.Role,
 		},
-		Token:     token,
-		TokenType: "Bearer",
-		ExpiresIn: 86400, // 24 小时（秒）
-		Roles:     roles,
-		Menus:     menuResponses,
+		Token:        token,
+		RefreshToken: refreshToken,
+		TokenType:    "Bearer",
+		ExpiresIn:    900, // 15 分钟（秒）
+		Roles:        roles,
+		Menus:        menuResponses,
 	}
 
 	// 发布登录事件（不影响主流程）
@@ -181,6 +202,51 @@ func (s *userService) Login(ctx context.Context, req *dto.LoginRequest) (*dto.Lo
 	return result, nil
 }
 
+// RefreshToken 使用 refresh token 换取新的 access token + refresh token
+func (s *userService) RefreshToken(ctx context.Context, req *dto.RefreshRequest) (*dto.RefreshResponse, error) {
+	userID, err := s.refreshStore.Get(ctx, req.RefreshToken)
+	if err != nil || userID == "" {
+		return nil, errors.New("refresh token 无效或已过期")
+	}
+	// 吊销旧 token（rotation）
+	_ = s.refreshStore.Delete(ctx, req.RefreshToken)
+
+	uid, err := uuid.Parse(userID)
+	if err != nil {
+		return nil, errors.New("refresh token 无效")
+	}
+
+	user, err := s.repo.FindByID(ctx, uid)
+	if err != nil {
+		return nil, errors.New("用户不存在")
+	}
+
+	newToken, err := jwt.GenerateToken(user.ID.String(), user.Username, user.Role, "", 15*time.Minute)
+	if err != nil {
+		return nil, errors.New("token 生成失败")
+	}
+
+	newRefresh, err := generateRefreshToken()
+	if err != nil {
+		return nil, errors.New("token 生成失败")
+	}
+	if err := s.refreshStore.Save(ctx, newRefresh, user.ID.String(), 7*24*time.Hour); err != nil {
+		return nil, errors.New("token 保存失败")
+	}
+
+	return &dto.RefreshResponse{
+		Token:        newToken,
+		RefreshToken: newRefresh,
+		TokenType:    "Bearer",
+		ExpiresIn:    900,
+	}, nil
+}
+
+// Logout 吊销 refresh token
+func (s *userService) Logout(ctx context.Context, refreshToken string) error {
+	return s.refreshStore.Delete(ctx, refreshToken)
+}
+
 // GetByID 根据 ID 获取用户
 func (s *userService) GetByID(ctx context.Context, id uuid.UUID) (*models.User, error) {
 	return s.repo.FindByID(ctx, id)
@@ -189,6 +255,15 @@ func (s *userService) GetByID(ctx context.Context, id uuid.UUID) (*models.User, 
 // List 列出所有用户
 func (s *userService) List(ctx context.Context) ([]*models.User, error) {
 	return s.repo.List(ctx)
+}
+
+// generateRefreshToken 生成 32 字节随机 hex 字符串作为 refresh token
+func generateRefreshToken() (string, error) {
+	b := make([]byte, 32)
+	if _, err := rand.Read(b); err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(b), nil
 }
 
 func buildUserLoginEventPayload(user *models.User) ([]byte, error) {

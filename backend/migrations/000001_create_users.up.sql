@@ -1,0 +1,21 @@
+CREATE TABLE IF NOT EXISTS users (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    email TEXT UNIQUE,
+    username TEXT NOT NULL UNIQUE,
+    password TEXT NOT NULL,
+    role TEXT NOT NULL DEFAULT 'user',
+    full_name TEXT,
+    avatar_url TEXT,
+    phone TEXT,
+    gender TEXT,
+    birthday DATE,
+    bio TEXT,
+    status TEXT NOT NULL DEFAULT 'active',
+    is_verified BOOLEAN NOT NULL DEFAULT FALSE,
+    last_login_at TIMESTAMPTZ,
+    country TEXT,
+    city TEXT,
+    address TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);

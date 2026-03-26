@@ -9,6 +9,7 @@ import (
 	"backend/internal/routes"
 	"backend/internal/services"
 	"backend/pkg/utils/captcha"
+	"backend/pkg/utils/jwt"
 	"context"
 	"errors"
 	"fmt"
@@ -97,9 +98,25 @@ func initServices(repos *repositoriesHolder, manager *database.Manager, publishe
 		},
 	}
 
+	// 初始化 refresh token store（Redis 优先，回退内存）
+	var refreshStore jwt.RefreshStore
+	if config.AppConfig.RedisAddr != "" {
+		rs, err := jwt.NewRedisRefreshStore(jwt.RefreshStoreConfig{
+			Addr:      config.AppConfig.RedisAddr,
+			Username:  config.AppConfig.RedisUsername,
+			Password:  config.AppConfig.RedisPassword,
+			DB:        config.AppConfig.RedisDB,
+			UseTLS:    config.AppConfig.RedisTLS,
+			KeyPrefix: "refresh:",
+		})
+		if err == nil {
+			refreshStore = rs
+		}
+	}
+
 	return &servicesHolder{
 		Task:   services.NewTaskService(repos.Task),
-		User:   services.NewUserService(repos.User, repos.Menu, publisher),
+		User:   services.NewUserService(repos.User, repos.Menu, publisher, refreshStore),
 		Health: services.NewHealthService(healthChecks),
 	}
 }

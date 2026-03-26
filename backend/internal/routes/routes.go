@@ -4,6 +4,7 @@ import (
 	"backend/internal/config"
 	"backend/internal/handlers"
 	"backend/internal/middlewares"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
@@ -66,15 +67,17 @@ func (r *Router) SetupRoutes(engine *gin.Engine) {
 
 	// 根路径重定向到前端
 	engine.GET("/", func(c *gin.Context) {
-		c.Redirect(302, "http://localhost:5173")
+		c.Redirect(302, config.AppConfig.FrontendURL)
 	})
 
 	// 健康检查路由
 	engine.GET("/health", r.handlers.Health.Check)
-	engine.GET("/metrics", middlewares.MetricsHandler())
+	engine.GET("/metrics", metricsAccessControl(config.AppConfig.MetricsAllowedIPs), middlewares.MetricsHandler())
 
-	// Swagger 文档路由
-	engine.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+	// Swagger 文档路由（仅非 release 模式开放）
+	if config.AppConfig.ServerMode != "release" {
+		engine.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+	}
 
 	// API 路由组
 	api := engine.Group("/api")
@@ -83,11 +86,15 @@ func (r *Router) SetupRoutes(engine *gin.Engine) {
 		api.GET("/health", r.handlers.Health.Check)
 
 		// 认证路由（公开访问）
+		// 对登录/注册/验证码接口单独施加更严格的 IP 限流，防止暴力破解
 		auth := api.Group("/auth")
+		auth.Use(middlewares.RateLimit(5, 10))
 		{
 			auth.GET("/captcha", r.handlers.Captcha.GetCaptcha)
 			auth.POST("/register", r.handlers.User.Register)
 			auth.POST("/login", r.handlers.User.Login)
+			auth.POST("/refresh", r.handlers.User.RefreshToken)
+			auth.POST("/logout", r.handlers.User.Logout)
 		}
 
 		// 任务管理路由（公开访问，无需认证）
@@ -128,4 +135,27 @@ func (r *Router) SetupRoutes(engine *gin.Engine) {
 			"requestID": requestID,
 		})
 	})
+}
+
+// metricsAccessControl 限制 /metrics 只允许指定 IP 访问。
+// allowedIPs 为空字符串时不限制（兼容本地开发）。
+func metricsAccessControl(allowedIPs string) gin.HandlerFunc {
+	if allowedIPs == "" {
+		return func(c *gin.Context) { c.Next() }
+	}
+	allowed := make(map[string]struct{})
+	for _, ip := range strings.Split(allowedIPs, ",") {
+		ip = strings.TrimSpace(ip)
+		if ip != "" {
+			allowed[ip] = struct{}{}
+		}
+	}
+	return func(c *gin.Context) {
+		clientIP := c.ClientIP()
+		if _, ok := allowed[clientIP]; !ok {
+			c.AbortWithStatus(403)
+			return
+		}
+		c.Next()
+	}
 }

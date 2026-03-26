@@ -975,3 +975,26 @@ func TestRegister(t *testing.T) {
 7. **Container** - 配置依赖注入
 
 遵循这个流程，可以保证代码的可维护性、可测试性和可扩展性。
+
+---
+
+## 数据库配置
+
+后端通过 GORM（SQL）和自定义接口（NoSQL）抽象，支持多种数据库后端。
+
+在 `backend/.env` 中设置 `DATABASE_TYPE`：
+
+```ini
+# 选项: mysql, postgres, mgdb
+DATABASE_TYPE=postgres
+
+# Supabase Session Pooler 示例（推荐生产环境）
+# DATABASE_TYPE=postgres
+# DATABASE_HOST=db.xxxxx.supabase.co
+# DATABASE_PORT=5432
+# DATABASE_NAME=postgres
+# DATABASE_USER=postgres
+# DATABASE_PASS=your_supabase_password
+```
+
+数据库迁移通过 `golang-migrate` 版本化管理（`backend/migrations/`），在应用启动时自动执行。

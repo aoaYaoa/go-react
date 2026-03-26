@@ -139,12 +139,20 @@ func main() {
 		}
 	}
 
-	// 执行数据库迁移（自动创建表结构）
-	// 注释掉自动迁移以加快启动速度，需要迁移时手动运行 scripts/migrate.sh
-	// if err := dbManager.Migrate(); err != nil {
-	// 	logger.Warnf("数据库迁移警告（可能是表已存在）: %v", err)
-	// 	// 不中断程序，继续运行
-	// }
+	// 执行版本化 SQL 迁移（golang-migrate）
+	// 设置环境变量 MIGRATIONS_PATH=migrations 启用，留空则跳过
+	if mp := config.AppConfig.MigrationsPath; mp != "" {
+		dsn := dbManager.GetMigrateDSN()
+		if dsn == "" {
+			logger.Warn("MIGRATIONS_PATH 已设置但当前数据库不支持迁移（仅 PostgreSQL），跳过")
+		} else {
+			if err := database.RunMigrations(mp, dsn); err != nil {
+				logger.Errorf("数据库迁移失败: %v", err)
+				panic(err)
+			}
+			logger.Info("数据库迁移完成")
+		}
+	}
 
 	// 初始化依赖容器
 	appContainer, err := container.InitializeContainer(dbManager, publisher)
